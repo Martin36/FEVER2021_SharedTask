@@ -1,0 +1,3 @@
+[submodule "FEVEROUS"]
+	path = FEVEROUS
+	url = git@github.com:Raldir/FEVEROUS.git

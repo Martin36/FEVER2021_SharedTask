@@ -1,3 +1,4 @@
 data/
 venv/
 .ipynb_checkpoints/
+.vscode/

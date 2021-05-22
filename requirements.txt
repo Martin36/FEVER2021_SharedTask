@@ -1,0 +1,6 @@
+regex
+numpy
+scipy
+sklearn
+jsonlines
+tqdm
