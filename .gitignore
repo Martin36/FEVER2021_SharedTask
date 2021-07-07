@@ -4,3 +4,5 @@ venv/
 .vscode/
 __pycache__/
 models/
+tfidf/
+train_data/
