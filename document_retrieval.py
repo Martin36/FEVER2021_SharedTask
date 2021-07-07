@@ -8,23 +8,17 @@ import math
 
 from sklearn.metrics.pairwise import cosine_similarity
 
+from util_funcs import load_train_data
+
 def load_doc_id_map(path):
     with open(path, 'r') as f:
         doc_id_map = json.loads(f.read())
     return doc_id_map
 
-def load_train_data(path):
-    train_data = []
-    with jsonlines.open(path) as reader:
-        for doc in reader:
-            train_data.append(doc)
-    return train_data
-
 def load_tfidf(vectorizer_path, wm_path):
     tfidfvectorizer = pickle.load(open(vectorizer_path, "rb"))
     tfidf_wm = pickle.load(open(wm_path, "rb"))
     return tfidfvectorizer, tfidf_wm
-
 
 def get_top_k_docs(batch_size, train_data, tfidfvectorizer,
         tfidf_wm, doc_id_map, nr_of_docs=5):
@@ -65,6 +59,7 @@ def store_top_k_docs(top_k_docs, train_data, path):
     with jsonlines.open(file_path, "w") as f:
         for i, d in enumerate(train_data):
             obj = {
+                "id": d["id"],
                 "claim": d["claim"],
                 "docs": top_k_docs[i]
             }
