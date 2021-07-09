@@ -1,21 +1,7 @@
-import jsonlines
-import os
-import time
-import json
 import argparse
-import pickle
-import math
 import unicodedata
 
-from util_funcs import load_train_data
-
-def load_related_docs(path):
-    related_docs = []
-    with jsonlines.open(path) as f:
-        for obj in f:
-            related_docs.append(obj)
-    return related_docs
-
+from util_funcs import load_jsonl
 
 def get_evidence_docs(doc_json):
     doc_names = []
@@ -27,13 +13,12 @@ def get_evidence_docs(doc_json):
 
 def calculate_accuracy(related_docs, train_data, print_examples=False):
     nr_of_correct_samples = 0
-    accuracy = 0
     for i in range(len(train_data)):
         evidence_docs = get_evidence_docs(train_data[i])
         nr_of_correct_samples += 1
         for doc in evidence_docs:
             match = False
-            for rel_doc in related_docs[i]:
+            for rel_doc in related_docs[i]['docs']:
                 if unicodedata.normalize('NFC', rel_doc) == unicodedata.normalize('NFC', doc):
                     match = True
             if not match:
@@ -44,7 +29,8 @@ def calculate_accuracy(related_docs, train_data, print_examples=False):
                     print("Related docs: {}".format(related_docs[i]))
                 nr_of_correct_samples -= 1
                 break
-        accuracy = (nr_of_correct_samples/len(train_data))*100
+    
+    accuracy = (nr_of_correct_samples/len(train_data))*100
     return accuracy
 
 def main():
@@ -63,9 +49,10 @@ def main():
     if ".jsonl" not in args.top_k_docs_path:
         raise RuntimeError("The top k docs path should include the name of the .json file")
 
-    train_data = load_train_data(args.train_data_path)
-    related_docs = load_related_docs(args.top_k_docs_path)
-    accuracy = calculate_accuracy(related_docs, train_data, print_examples=False)
+    train_data = load_jsonl(args.train_data_path)
+    train_data = train_data[1:]
+    related_docs = load_jsonl(args.top_k_docs_path)
+    accuracy = calculate_accuracy(related_docs, train_data)
     print("Accuracy for top k docs is: {}".format(accuracy))    # TODO: Figure out what k is
 
 

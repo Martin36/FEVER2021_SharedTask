@@ -1,13 +1,11 @@
 import sys
 import os
-import pprint
 import time
 import json
 import math
 import argparse
 import shutil
 
-pp = pprint.PrettyPrinter()
 DIR_PATH = os.path.abspath(os.getcwd())
 
 FEVEROUS_PATH = DIR_PATH + "/FEVEROUS/src"

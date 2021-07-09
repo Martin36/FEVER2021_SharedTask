@@ -8,7 +8,7 @@ import math
 
 from sklearn.metrics.pairwise import cosine_similarity
 
-from util_funcs import load_train_data
+from util_funcs import load_jsonl, stemming_tokenizer
 
 def load_doc_id_map(path):
     with open(path, 'r') as f:
@@ -20,8 +20,10 @@ def load_tfidf(vectorizer_path, wm_path):
     tfidf_wm = pickle.load(open(wm_path, "rb"))
     return tfidfvectorizer, tfidf_wm
 
-def get_top_k_docs(batch_size, train_data, tfidfvectorizer,
-        tfidf_wm, doc_id_map, nr_of_docs=5):
+def get_text_related_docs(train_data, doc_id_map, args):
+    batch_size = args.batch_size
+    nr_of_docs = args.nr_of_docs
+    tfidf_vectorizer, tfidf_wm = load_tfidf(args.vectorizer_path, args.wm_path)
     nr_of_queries = len(train_data)
     batches = math.ceil(nr_of_queries / batch_size)
 
@@ -39,22 +41,65 @@ def get_top_k_docs(batch_size, train_data, tfidfvectorizer,
         
         train_queries = [train_data[i]['claim'] for i in range(start, end)]
         
-        query_tfidf = tfidfvectorizer.transform(train_queries)
+        query_tfidf = tfidf_vectorizer.transform(train_queries)
         cosine_similarities = cosine_similarity(query_tfidf, tfidf_wm)
-        del query_tfidf
-        print("Calculating cosine similarity for batch {} took {} seconds".format(batch_nr+1, time.time() - start_time))
+        print("Calculating cosine similarity between doc and claim for batch {} took {} seconds".format(batch_nr+1, time.time() - start_time))
         
         for i in range(cosine_similarities.shape[0]):
             related_docs_indices = cosine_similarities[i].argsort()[:-nr_of_docs-1:-1]
-            del cosine_similarities
             related_docs.append([doc_id_map[i] for i in related_docs_indices])
 
-    print("Total time for consine similarities {} seconds".format(time.time() - start_time))
-
+    print("Total time for consine similarities between docs and claims: {} seconds".format(time.time() - start_time))
+    del tfidf_vectorizer, tfidf_wm
     return related_docs
 
-def store_top_k_docs(top_k_docs, train_data, path):
-    k = len(top_k_docs[0])
+
+def get_title_related_docs(train_data, doc_id_map, args):
+    batch_size = args.batch_size
+    nr_of_docs = args.nr_of_docs
+    title_vectorizer, title_wm = load_tfidf(args.title_vectorizer_path, args.title_wm_path)
+    nr_of_queries = len(train_data)
+    batches = math.ceil(nr_of_queries / batch_size)
+
+    related_titles = []
+
+    start_time = time.time()
+
+    for batch_nr in range(batches):
+        print("Processing batch {} of {}".format(batch_nr+1, batches))
+
+        start = batch_nr*batch_size
+        end = (batch_nr+1)*batch_size
+        if end > nr_of_queries:
+            end = nr_of_queries
+        
+        train_queries = [train_data[i]['claim'] for i in range(start, end)]
+        
+        query_tfidf = title_vectorizer.transform(train_queries)
+        cosine_similarities = cosine_similarity(query_tfidf, title_wm)
+        print("Calculating cosine similarity for batch {} took {} seconds".format(batch_nr+1, time.time() - start_time))
+        
+        for i in range(cosine_similarities.shape[0]):
+            related_titles_indices = cosine_similarities[i].argsort()[:-nr_of_docs-1:-1]
+            related_titles.append([doc_id_map[i] for i in related_titles_indices])
+
+    print("Total time for consine similarities {} seconds".format(time.time() - start_time))
+    del title_vectorizer, title_wm
+    return related_titles
+
+def get_top_k_docs(train_data, args):
+    doc_id_map = load_doc_id_map(args.doc_id_map_path)
+    
+    text_related_docs = get_text_related_docs(train_data, doc_id_map, args)
+    title_related_docs = get_title_related_docs(train_data, doc_id_map, args)
+    merged_docs = [list(set(x + y)) for x, y in zip(text_related_docs, title_related_docs)]
+
+    return merged_docs
+
+
+def store_top_k_docs(top_k_docs, train_data, path, nr_of_docs):
+    # Multiply by 2 since we are getting 'nr_of_docs' docs from text similarity and title similarity respectively
+    k = int(2*nr_of_docs)
     file_path = "{}/top_{}_docs.jsonl".format(path, k)
     with jsonlines.open(file_path, "w") as f:
         for i, d in enumerate(train_data):
@@ -77,9 +122,10 @@ def main():
     parser = argparse.ArgumentParser(description="Extracts the text from the feverous db and creates a corpus")
     parser.add_argument("--doc_id_map_path", default=None, type=str, help="Path to the TF-IDF word model")
     parser.add_argument("--train_data_path", default=None, type=str, help="Path to the TF-IDF word model")
-    parser.add_argument("--db_path", default=None, type=str, help="Path to the FEVEROUS database")
     parser.add_argument("--vectorizer_path", default=None, type=str, help="Path to the vectorizer object")
     parser.add_argument("--wm_path", default=None, type=str, help="Path to the TF-IDF word model")
+    parser.add_argument("--title_vectorizer_path", default=None, type=str, help="Path to the vectorizer object")
+    parser.add_argument("--title_wm_path", default=None, type=str, help="Path to the TF-IDF word model")
     parser.add_argument("--out_path", default=None, type=str, help="Path to the output folder, where the top k documents should be stored")
     parser.add_argument("--batch_size", default=100, type=int, help="How many documents to process each iteration")
     parser.add_argument("--nr_of_docs", default=5, type=int, help="The number of documents to retrieve for each claim")
@@ -94,10 +140,6 @@ def main():
         raise RuntimeError("Invalid train data path")
     if ".json" not in args.train_data_path:
         raise RuntimeError("The train data path should include the name of the .jsonl file")
-    if not args.db_path:
-        raise RuntimeError("Invalid database path")
-    if ".db" not in args.db_path:
-        raise RuntimeError("The database path should include the name of the db file")
     if not args.vectorizer_path:
         raise RuntimeError("Invalid vectorizer path")
     if ".pickle" not in args.vectorizer_path:
@@ -106,21 +148,28 @@ def main():
         raise RuntimeError("Invalid word model path")
     if ".pickle" not in args.wm_path:
         raise RuntimeError("The vectorizer path should include the name of the .pickle file")
+    if not args.title_vectorizer_path:
+        raise RuntimeError("Invalid title vectorizer path")
+    if ".pickle" not in args.title_vectorizer_path:
+        raise RuntimeError("The title vectorizer path should include the name of the .pickle file")
+    if not args.title_wm_path:
+        raise RuntimeError("Invalid title word model path")
+    if ".pickle" not in args.title_wm_path:
+        raise RuntimeError("The title vectorizer path should include the name of the .pickle file")
 
     if not os.path.exists(args.out_path):
         print("Output directory doesn't exist. Creating {}".format(args.out_path))
         os.makedirs(args.out_path)
 
-    doc_id_map = load_doc_id_map(args.doc_id_map_path)
-    train_data = load_train_data(args.train_data_path)
-    tfidfvectorizer, tfidf_wm = load_tfidf(args.vectorizer_path, args.wm_path)
-    
+    train_data = load_jsonl(args.train_data_path)
+    # First sample is empty
+    train_data = train_data[1:]
+
     print("Getting the top k docs...")
-    top_k_docs = get_top_k_docs(args.batch_size, train_data, 
-        tfidfvectorizer, tfidf_wm, doc_id_map, nr_of_docs=args.nr_of_docs)
+    top_k_docs = get_top_k_docs(train_data, args)
     print("Finished getting the top k docs")
 
-    store_top_k_docs(top_k_docs, train_data, args.out_path)
+    store_top_k_docs(top_k_docs, train_data, args.out_path, args.nr_of_docs)
     
 
 if __name__ == "__main__":
