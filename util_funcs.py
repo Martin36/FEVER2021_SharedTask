@@ -15,7 +15,7 @@ sys.path.insert(0, FEVEROUS_PATH)
 from database.feverous_db import FeverousDB
 from utils.wiki_page import WikiPage
 
-nltk.download('stopwords')
+# nltk.download('stopwords')
 porter_stemmer = PorterStemmer()
 s_words = set(stopwords.words('english'))
 
@@ -38,6 +38,10 @@ def replace_entities(sent):
     regex = r'\[\[([^\|]+)\|([^\]]+)\]\]'
     return re.sub(regex, '\\2', sent)
   
+def remove_header_tokens(string):
+    regex = r"\[H\]"
+    return re.sub(regex, "", string)
+
 def remove_punctuation(sent):
     if sent[-1] == '.':
         return sent[:-1]
