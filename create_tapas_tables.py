@@ -8,7 +8,7 @@ from tqdm import tqdm
 from util_funcs import load_jsonl, remove_header_tokens
 
 
-def create_tables(tapas_train_data, out_path, table_out_path):
+def create_tables(tapas_train_data, out_path, table_out_path, write_to_files):
     counter = 0
     # limit = 500
     table_counter = 1
@@ -46,16 +46,18 @@ def create_tables(tapas_train_data, out_path, table_out_path):
             table_id = int(d["cell_ids"][0].split("_")[-3])
             headers = []
             rows = []
-            for h in d["header"]:
-                headers.append(h)
+            rows.append(d["header"])
+            for h in range(len(d["header"])):
+                headers.append("col{}".format(h))
             for row in d["rows"]:
                 rows.append(row)
             df = pd.DataFrame(rows, columns=headers)
             
             table_file_name = table_out_path + "table_{}.csv".format(table_counter)
             table_file_names[table_id] = table_file_name
-
-            df.to_csv(table_file_name)
+            
+            if write_to_files:
+                df.to_csv(table_file_name)
 
             table_counter += 1
 
@@ -80,7 +82,9 @@ def create_tables(tapas_train_data, out_path, table_out_path):
 
     print("{} valid train samples out of {}".format(len(data_rows), len(tapas_train_data)))
     df = pd.DataFrame(data_rows, columns=column_names)
-    df.to_csv(out_path + "tapas_data.csv")
+    
+    if write_to_files:
+        df.to_csv(out_path + "tapas_data.csv")
 
 
 def main():
@@ -88,6 +92,7 @@ def main():
     parser.add_argument("--tapas_train_path", default=None, type=str, help="Path to the tapas train data")
     parser.add_argument("--out_path", default=None, type=str, help="Path to the output folder, where the top k documents should be stored")
     parser.add_argument("--table_out_path", default=None, type=str, help="Path to the output folder, where the top k documents should be stored")
+    parser.add_argument("--write_to_files", default=False, type=bool, help="Should the tables be written to files?")
 
     args = parser.parse_args()
 
@@ -113,7 +118,7 @@ def main():
     tapas_train_data = load_jsonl(args.tapas_train_path)
 
     print("Creating tapas tables on the SQA format...")
-    create_tables(tapas_train_data, args.out_path, args.table_out_path)
+    create_tables(tapas_train_data, args.out_path, args.table_out_path, args.write_to_files)
     print("Finished creating tapas tables")
 
 

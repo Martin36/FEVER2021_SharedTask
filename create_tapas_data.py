@@ -16,26 +16,23 @@ sys.path.insert(0, FEVEROUS_PATH)
 from database.feverous_db import FeverousDB
 from utils.wiki_page import WikiPage
 
+
 def create_table_dict(table):
+
+    table_rows = table.get_rows()
+    rows = [replace_entities(table_row.cell_content) 
+        for table_row in table_rows]
+    col_names = rows[0]
+    rows = rows[1:]
+
     table_dict = {}
-    linearized_table = replace_entities(table.linearized_table)
-    linearized_table = remove_header_tokens(linearized_table)
-    rows = linearized_table.split('\n')
-    col_names = rows[0].split('|')
     table_dict['header'] = [name.strip() for name in col_names]
     table_dict['cell_ids'] = table.get_ids()
-    table_dict['rows'] = []
-    for i, row in enumerate(rows):
-        if i == 0:
-            continue
-        table_dict['rows'].append([s.strip() for s in row.split('|')])
-    last_row_idx = 0
-    for i, row in enumerate(table_dict['rows']):
-        if len(row) < len(table_dict['header']):
-            table_dict['rows'][last_row_idx][-1] += '\n{}'.format(" ".join(row))
-        else:
-            last_row_idx = i
+    table_dict['rows'] = rows
+    
+    # Keep only rows that have the same nr of columns as the header
     table_dict['rows'] = [row for row in table_dict['rows'] if len(row) == len(table_dict['header'])]
+    
     return table_dict
 
 def get_answer_texts(db, data):
@@ -76,6 +73,7 @@ def convert_to_tapas_format(db, data):
     result_dict = {}
     result_dict['id'] = data['id']
     result_dict['claim'] = data['claim']
+    result_dict['label'] = data['label']
     result_dict['document_title'] = document_title
     result_dict['evidence'] = [evidence for evidence in evidence_list if '_cell_' in evidence]
         
@@ -117,6 +115,7 @@ def create_tapas_data(db, train_data):
             if None in data['answer_texts']:
                 print("Train sample {} has None type answer texts".format(i))
             tapas_data.append(data)
+    return tapas_data
 
 def store_tapas_data(tapas_data, out_path):
     print("Storing tapas data...")
@@ -160,7 +159,7 @@ def main():
     tapas_data = create_tapas_data(db, train_data)
     print("Finished creating tapas data")
 
-    # store_tapas_data(tapas_data, args.out_path)
+    store_tapas_data(tapas_data, args.out_path)
 
 
 if __name__ == "__main__":

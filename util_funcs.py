@@ -35,8 +35,13 @@ def load_jsonl(path):
 def replace_entities(sent):
     if not sent:
         return sent
+    
     regex = r'\[\[([^\|]+)\|([^\]]+)\]\]'
-    return re.sub(regex, '\\2', sent)
+
+    if type(sent) == list:
+        return [re.sub(regex, '\\2', s) for s in sent]
+    else:
+        return re.sub(regex, '\\2', sent)
   
 def remove_header_tokens(string):
     regex = r"\[H\]"
