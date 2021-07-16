@@ -1,7 +1,6 @@
-import argparse
 import torch
+import argparse
 import ast
-import os
 import pandas as pd
 
 from tqdm import tqdm
@@ -11,25 +10,13 @@ from table_dataset import collate_fn, TableDataset
 
 torch.autograd.set_detect_anomaly(True)
 
-def train_model(train_dataloader, device, model_path, tapas_model_name):
-    config = TapasConfig.from_pretrained('{}-finetuned-wtq'.format(tapas_model_name))
-    # config = TapasConfig(
-    #     num_aggregation_labels = 4,
-    #     use_answer_as_supervision = True,
-    #     answer_loss_cutoff = 0.664694,
-    #     cell_selection_preference = 0.207951,
-    #     huber_loss_delta = 0.121194,
-    #     init_cell_selection_weights_to_zero = True,
-    #     select_one_column = True,
-    #     allow_empty_column_selection = False,
-    #     temperature = 0.0352513,
-    # )
-    model = TapasForQuestionAnswering.from_pretrained(tapas_model_name, config=config)
-    optimizer = AdamW(model.parameters(), lr=5e-5)
-    model.to(device)
+def evaluate_model(model, eval_dataloader, device):
+    model.eval()
 
-    for epoch in range(2):  # loop over the dataset multiple times
-        for idx, batch in enumerate(tqdm(train_dataloader)):
+    with torch.no_grad():
+        avg_loss = 0
+        avg_acc = 0
+        for _, batch in enumerate(tqdm(eval_dataloader)):
             # get the inputs;
             input_ids = batch["input_ids"].to(device)
             attention_mask = batch["attention_mask"].to(device)
@@ -40,24 +27,20 @@ def train_model(train_dataloader, device, model_path, tapas_model_name):
             float_answer = batch["float_answer"].to(device)
             claim_id = batch["claim_id"]
             question = batch["question"]
-            # zero the parameter gradients
-            optimizer.zero_grad()
-            # forward + backward + optimize
             outputs = model(input_ids=input_ids, attention_mask=attention_mask, token_type_ids=token_type_ids,
                            labels=labels, numeric_values=numeric_values, numeric_values_scale=numeric_values_scale,
                            float_answer=float_answer)
-            loss = outputs.loss
-            print("Loss: {}".format(loss))
-            loss.backward()
-            optimizer.step()
 
-    torch.save(model, model_path + "tapas_model.pth")
+            loss = outputs.loss
+            logits = outputs.logits
+            print("Loss: {}".format(loss))
+            print("Logits: {}".format(logits))
 
 
 def main():
     parser = argparse.ArgumentParser(description="Extracts the text from the feverous db and creates a corpus")
     parser.add_argument("--table_csv_path", default=None, type=str, help="Path to the folder containing the csv tables")
-    parser.add_argument("--train_csv_path", default=None, type=str, help="Path to the csv file containing the training examples")
+    parser.add_argument("--eval_csv_path", default=None, type=str, help="Path to the csv file containing the evaluation examples")
     parser.add_argument("--tapas_model_name", default='google/tapas-base', type=str, help="Name of the pretrained tapas model")
     parser.add_argument("--model_path", default=None, type=str, help="Path to the output folder for the model")
     parser.add_argument("--batch_size", default=1, type=int, help="The size of each training batch. Reduce this is you run out of memory")
@@ -73,11 +56,7 @@ def main():
     if not args.model_path:
         raise RuntimeError("Invalid model output path")
 
-    model_dir = os.path.dirname(args.model_path)
-    if not os.path.exists(model_dir):
-        print("Model directory doesn't exist. Creating {}".format(model_dir))
-        os.makedirs(model_dir)
-
+    model = torch.load(args.model_path)
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
     tokenizer = TapasTokenizer.from_pretrained(args.tapas_model_name)
     data = pd.read_csv(args.train_csv_path, converters={
@@ -85,13 +64,11 @@ def main():
         "answer_text": ast.literal_eval
     })
 
-    train_dataset = TableDataset(data, tokenizer, args.table_csv_path)
-    # train_dataset = nc.SafeDataset(train_dataset)
-    train_dataloader = torch.utils.data.DataLoader(train_dataset, 
+    eval_dataset = TableDataset(data, tokenizer, args.table_csv_path, device)
+    eval_dataloader = torch.utils.data.DataLoader(eval_dataset, 
         batch_size=args.batch_size, drop_last=True, collate_fn=collate_fn)
-    train_model(train_dataloader, device, args.model_path, args.tapas_model_name)
-    print("Finished training the model")
-    print("{} samples could not be used".format(stats["unusable_samples"]))
+
+    evaluate_model(model, eval_dataloader, device)
 
 
 if __name__ == "__main__":

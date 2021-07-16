@@ -29,7 +29,8 @@ def create_table_dict(table):
     table_dict['header'] = [name.strip() for name in col_names]
     table_dict['cell_ids'] = table.get_ids()
     table_dict['rows'] = rows
-    
+    table_dict['page'] = table.page
+
     # Keep only rows that have the same nr of columns as the header
     table_dict['rows'] = [row for row in table_dict['rows'] if len(row) == len(table_dict['header'])]
     
