@@ -1,3 +1,4 @@
+from collections import defaultdict
 import torch
 import argparse
 import ast
@@ -11,84 +12,102 @@ torch.autograd.set_detect_anomaly(True)
 
 os.environ['CUDA_LAUNCH_BLOCKING'] = "1"
 
-def evaluate_model(model, tokenizer, data, device):
+stats = defaultdict(int)
+
+def evaluate_model(model, tokenizer, data, device, verbose):
     model.eval()
 
     with torch.no_grad():
-        avg_loss = 0
-        avg_acc = 0
-        avg_precision = 0
-        avg_recall = 0
-        for idx, item in data.iterrows():
+        for cell_classification_threshold in [0.5, 0.3, 0.1]:
+            avg_loss = 0
+            avg_precision = 0
+            avg_recall = 0
+            counter = 0
+            for idx, item in tqdm(data.iterrows()):
 
-            table = pd.read_csv(item.table_file).astype(str)
-            batch = tokenizer(table=table,
-                            queries=item.question,
-                            answer_coordinates=item.answer_coordinates,
-                            answer_text=item.answer_text,
-                            truncation=True,
-                            padding="max_length",
-                            return_tensors="pt"
-            )
-            batch = {key: val for key, val in batch.items()}
-            if torch.gt(batch["numeric_values"], 1e+20).any():
-                continue
-            batch["float_answer"] = torch.tensor(item.float_answer)
+                # if idx > 5: break
 
-            input_ids = batch["input_ids"].to(device)
-            attention_mask = batch["attention_mask"].to(device)
-            token_type_ids = batch["token_type_ids"].to(device)
-            labels = batch["labels"].to(device)
-            numeric_values = batch["numeric_values"].to(device)
-            numeric_values_scale = batch["numeric_values_scale"].to(device)
-            float_answer = batch["float_answer"].to(device)
-            float_answer = torch.reshape(float_answer, (1, 1))
+                table = pd.read_csv(item.table_file).astype(str)
+                try:
+                    batch = tokenizer(table=table,
+                                    queries=item.question,
+                                    answer_coordinates=item.answer_coordinates,
+                                    answer_text=item.answer_text,
+                                    truncation=True,
+                                    padding="max_length",
+                                    return_tensors="pt"
+                    )
+                    batch = {key: val for key, val in batch.items()}
+                    if torch.gt(batch["numeric_values"], 1e+20).any():
+                        # stats["too_large_numeric_values"] += 1
+                        continue
+                    batch["float_answer"] = torch.tensor(item.float_answer)
+                except:
+                    # stats["too_large_numeric_values"] += 1
+                    continue
 
-            outputs = model(input_ids=input_ids, attention_mask=attention_mask, token_type_ids=token_type_ids,
-                           labels=labels, numeric_values=numeric_values, numeric_values_scale=numeric_values_scale,
-                           float_answer=float_answer)
+                input_ids = batch["input_ids"].to(device)
+                attention_mask = batch["attention_mask"].to(device)
+                token_type_ids = batch["token_type_ids"].to(device)
+                labels = batch["labels"].to(device)
+                numeric_values = batch["numeric_values"].to(device)
+                numeric_values_scale = batch["numeric_values_scale"].to(device)
+                float_answer = batch["float_answer"].to(device)
+                float_answer = torch.reshape(float_answer, (1, 1))
 
-            loss = outputs.loss
-            logits = outputs.logits.cpu()
-            k = 5
-            preds = torch.topk(logits, k)
-            pred_indices = torch.squeeze(preds.indices).to(device)
-            input_id_preds = torch.index_select(input_ids, 1, pred_indices)
-            # input_id_preds = input_id_preds.to("cpu")
-            input_id_preds = input_id_preds.cpu()
-            input_id_preds = torch.squeeze(input_id_preds)
-            logits_aggregation = outputs.logits_aggregation.cpu()
-            # output_cells = tokenizer.decode(input_id_preds)
-            output_labels = tokenizer.convert_logits_to_predictions(batch, logits, logits_aggregation)
-            output_cells = output_labels[0][0]
+                outputs = model(input_ids=input_ids, attention_mask=attention_mask, token_type_ids=token_type_ids,
+                            labels=labels, numeric_values=numeric_values, numeric_values_scale=numeric_values_scale,
+                            float_answer=float_answer)
+
+                loss = outputs.loss
+                logits = outputs.logits.cpu()
+                logits_agg = outputs.logits_aggregation.cpu()
+                output_labels = tokenizer.convert_logits_to_predictions(
+                    batch, logits, logits_agg, 
+                    cell_classification_threshold=cell_classification_threshold)
+                
+                output_cells = output_labels[0][0]
+                avg_loss += loss
+                # The accuracy is calculates as the number of correct table cells found
+                nr_of_correct = 0
+                for output_cell in output_cells:
+                    for answer_cell in item["answer_coordinates"]:
+                        if output_cell[0] == answer_cell[0] and \
+                        output_cell[1] == answer_cell[1]:
+                            nr_of_correct += 1
+
+                if len(output_cells) > 0:
+                    precision = nr_of_correct / len(output_cells)
+                else:
+                    precision = 0
+                recall = nr_of_correct / len(item["answer_coordinates"])
+                avg_precision += precision
+                avg_recall += recall
+                counter += 1
+
+                if verbose:            
+                    print()
+                    print("==============================")
+                    print("Batch nr: {}".format(idx))
+                    print("Loss: {}".format(loss))
+                    # print("Output cells: {}".format(output_cells))
+                    print("Predicted answer coordinates: {}".format(output_cells))
+                    print("Correct answer coordinates: {}".format(item["answer_coordinates"]))
+                    print("Predicted aggregation indicies: {}".format(output_labels[1]))
+                    print("Precision: {}".format(precision))
+                    print("Recall: {}".format(recall))
+                    print("==============================")
+            
+            avg_precision = avg_precision / counter
+            avg_recall = avg_recall / counter
+
             print()
             print("==============================")
-            print("Batch nr: {}".format(idx))
-            print("Loss: {}".format(loss))
-            # print("Output cells: {}".format(output_cells))
-            print("Predicted answer coordinates: {}".format(output_cells))
-            print("Correct answer coordinates: {}".format(item["answer_coordinates"]))
-            print("Predicted aggregation indicies: {}".format(output_labels[1]))
-            avg_loss += loss
-            # The accuracy is calculates as the number of correct table cells found
-            nr_of_correct = 0
-            for output_cell in output_cells:
-                for answer_cell in item["answer_coordinates"]:
-                    if output_cell[0] == answer_cell[0] and \
-                    output_cell[1] == answer_cell[1]:
-                        nr_of_correct += 1
-
-            if len(output_cells) > 0:
-                precision = nr_of_correct / len(output_cell)
-            else:
-                precision = 0
-            recall = nr_of_correct / len(item["answer_coordinates"])
-            
-            print("Precision: {}".format(precision))
-            print("Recall: {}".format(recall))
-            avg_precision += precision
-            avg_recall += recall
+            print("Results for cell_classification_threshold={}".format(cell_classification_threshold))
+            print("Average precision: {}".format(avg_precision))
+            print("Average recall: {}".format(avg_recall))
             print("==============================")
+
 
 
 
@@ -99,6 +118,7 @@ def main():
     parser.add_argument("--tapas_model_name", default='google/tapas-base', type=str, help="Name of the pretrained tapas model")
     parser.add_argument("--model_path", default=None, type=str, help="Path to the output folder for the model")
     parser.add_argument("--batch_size", default=1, type=int, help="The size of each training batch. Reduce this is you run out of memory")
+    parser.add_argument("--verbose", default=False, type=bool, help="Set to True if console logging should be turned on")
 
     args = parser.parse_args()
 
@@ -119,7 +139,7 @@ def main():
         "answer_text": ast.literal_eval
     })
 
-    evaluate_model(model, tokenizer, data, device)
+    evaluate_model(model, tokenizer, data, device, args.verbose)
 
 
 if __name__ == "__main__":
