@@ -1,24 +1,90 @@
+import argparse
+from collections import defaultdict
 import torch
+
 from transformers import T5ForConditionalGeneration, T5Tokenizer
+from tqdm import tqdm
+from util_funcs import load_jsonl
+
 model = T5ForConditionalGeneration.from_pretrained("t5-small")
 tokenizer = T5Tokenizer.from_pretrained("t5-small")
 
+MNLI_TO_FEVER_MAP = {
+    "▁entailment": "SUPPORTS",
+    "▁neutral": "NOT ENOUGH INFO",
+    "▁contradiction": "REFUTES"
+}
 
-def test_translation():
-    input_ids = tokenizer('translate English to German: The house is wonderful.', return_tensors='pt').input_ids
-    # This is the correct answer
-    labels = tokenizer('Das Haus ist wunderbar.', return_tensors='pt').input_ids
+stats = defaultdict(int)
+
+def predict_veracity(claim, evidence):
+    # task = "rte"
+    task = "mnli"
+    if task == "mnli":
+        input_str = "{} premise: {} hypothesis: {}".format(task, evidence, claim)
+    if task == "rte":
+        input_str = "{} sentence1: {} sentence2: {}".format(task, claim, evidence)
+
+    input_ids = tokenizer(input_str, return_tensors='pt').input_ids
 
     result = model.generate(input_ids)
     result = torch.squeeze(result)
-    translation = tokenizer.convert_ids_to_tokens(result)
+    target = tokenizer.convert_ids_to_tokens(result, skip_special_tokens=True)
 
-    print("Result is: {}".format(" ".join(translation)))
+    return target
+
+def test_model(data):
+    num_correct = 0
+    counter = 0
+    for d in tqdm(data):
+        # if counter > 200: break
+        claim = d["claim"]
+        evidence = d["evidence"]
+        label = d["label"]
+        stats["nr_of_{}_samples".format(label)] += 1
+        predicted_label = predict_veracity(claim, evidence)
+        predicted_label = "".join(predicted_label)
+        if predicted_label not in MNLI_TO_FEVER_MAP.keys():
+            # Assume that all invalid predicted labels means not enough information
+            if label == "NOT ENOUGH INFO":
+                stats["nr_of_correct_{}_samples".format(label)] += 1
+                num_correct += 1
+        else:
+            if label ==  MNLI_TO_FEVER_MAP[predicted_label]:
+                stats["nr_of_correct_{}_samples".format(label)] += 1
+                num_correct += 1
+        counter += 1
+    accuracy = num_correct / counter
+
+    print("Accuracy for {} samples: {}".format(len(data), accuracy))
+    print()
+    print("========== STATS ============")
+    for label in MNLI_TO_FEVER_MAP.values():
+        print("Nr of {} samples: {}".format(label, stats["nr_of_{}_samples".format(label)]))
+        print("Nr of correct {} samples: {}".format(label, stats["nr_of_correct_{}_samples".format(label)]))
+        if stats["nr_of_{}_samples".format(label)] > 0:
+            amount_correct = stats["nr_of_correct_{}_samples".format(label)] / stats["nr_of_{}_samples".format(label)]
+        else:
+            amount_correct = 1.0
+        print("Amount of correct {} samples: {}".format(label, amount_correct))
+        print()
+    print("=============================")
 
 
-input_ids = tokenizer('rte sentence1: A smaller proportion of Yugoslavia’s Italians were settled in Slovenia (at the 1991 national census, some 3000 inhabitants of Slovenia declared themselves as ethnic Italians). sentence2: Slovenia has 3,000 inhabitants.', return_tensors='pt').input_ids
-result = model.generate(input_ids)
-result = torch.squeeze(result)
-target = tokenizer.convert_ids_to_tokens(result, skip_special_tokens=True)
 
-print("Result is: {}".format("".join(target)))
+def main():
+    parser = argparse.ArgumentParser(description="Extracts the text from the feverous db and creates a corpus")
+    parser.add_argument("--train_data_path", default=None, type=str, help="Path to the file containing the training data")
+
+    args = parser.parse_args()
+
+    if not args.train_data_path:
+        raise RuntimeError("Invalid train data path")
+
+    train_data = load_jsonl(args.train_data_path)
+    test_model(train_data)
+
+
+if __name__ == "__main__":
+    main()
+

@@ -60,7 +60,8 @@ def expand_table_id(db, table_id):
 
 
 
-def get_top_sents(db, doc_ids, claim, args):
+def get_top_sents(db, doc_ids, claim, use_tables, n_gram_min, 
+        n_gram_max, nr_of_sents):
     sent_ids = []
     table_ids = []
     all_sents = []
@@ -72,7 +73,7 @@ def get_top_sents(db, doc_ids, claim, args):
             sent_ids.append('{}_sentence_{}'.format(doc_json['title'], i))
         all_sents += sents
         
-        if args.use_tables:
+        if use_tables:
             tables_content = extract_tables(doc_json)
             for i, table_content in enumerate(tables_content):
                 for j in range(len(table_content)):
@@ -80,11 +81,11 @@ def get_top_sents(db, doc_ids, claim, args):
                 all_table_rows += table_content
 
     sent_vectorizer = TfidfVectorizer(analyzer='word',stop_words='english',
-        ngram_range=(args.n_gram_min,args.n_gram_max))
+        ngram_range=(n_gram_min, n_gram_max))
     sent_wm = sent_vectorizer.fit_transform(all_sents + all_table_rows)
     claim_tfidf = sent_vectorizer.transform([claim])
     cosine_similarities = cosine_similarity(claim_tfidf, sent_wm).flatten()
-    top_sents_indices = cosine_similarities.argsort()[:-args.nr_of_sents-1:-1]
+    top_sents_indices = cosine_similarities.argsort()[:-nr_of_sents-1:-1]
     top_sents = [sent for i, sent in enumerate(sent_ids + table_ids) if i in top_sents_indices]
     
     for sent in top_sents:
@@ -96,21 +97,49 @@ def get_top_sents(db, doc_ids, claim, args):
     return top_sents
 
 
-def get_top_sents_for_claims(args):
-    db = FeverousDB(args.db_path)
+def get_top_sents_for_claims(db_path, top_docs_path, nr_of_sents, 
+        use_tables, n_gram_min, n_gram_max):
+    db = FeverousDB(db_path)
 
     print("Loading previously retrieved docs for claims...")
-    top_k_docs = load_jsonl(args.top_docs_path)
+    top_k_docs = load_jsonl(top_docs_path)
     print("Finished loading top docs")
 
     result = []
     for obj in tqdm(top_k_docs):
-        top_sents = get_top_sents(db, obj["docs"], obj["claim"], args)
-        obj["top_{}_sents".format(args.nr_of_sents)] = top_sents
+        top_sents = get_top_sents(db, obj["docs"], obj["claim"], use_tables, n_gram_min, 
+        n_gram_max, nr_of_sents)
+        obj["top_{}_sents".format(nr_of_sents)] = top_sents
         result.append(obj)
     
     return result       
-        
+
+def get_top_sents_for_claim(db_path: str, top_k_docs: list, claim: str, 
+        nr_of_sents: int, n_gram_min=1, n_gram_max=3):
+    """ Retrieves the top sentences for a claim from the previously retrieved documents
+
+        Parameters
+        ----------
+        db_path : str
+            The path to the database file
+        top_k_docs : list
+            The previously retrieved top docs for the claim
+        nr_of_sents : int
+            The number of sentences to retrieve
+        n_gram_min : int
+            The smallest n-gram to use in the retrieval (default is 1 e.g. unigram)
+        n_gram_max : int
+            The largest n-gram to use in the retrieval (default is 3 e.g. trigram)
+    """
+
+    db = FeverousDB(db_path)
+    use_tables = False
+    top_sents = get_top_sents(db, top_k_docs, claim, use_tables, 
+        n_gram_min, n_gram_max, nr_of_sents)
+    
+    return top_sents
+
+
 def store_top_sents(top_sents, nr_of_sents, path):
     file_path = "{}/top_{}_sents.jsonl".format(path, nr_of_sents)
     with jsonlines.open(file_path, "w") as f:
@@ -150,7 +179,8 @@ def main():
         os.makedirs(out_dir)
 
     print("Retrieving top {} sentences for each claim from the retrieved docs...".format(args.nr_of_sents))
-    top_sents = get_top_sents_for_claims(args)
+    top_sents = get_top_sents_for_claims(args.db_path, 
+        args.top_docs_path, args.nr_of_sents)
     print("Finished retrieving top sentences")
 
     print("Storing top sentences...")

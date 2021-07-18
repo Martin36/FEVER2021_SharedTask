@@ -8,7 +8,7 @@ import math
 
 from sklearn.metrics.pairwise import cosine_similarity
 
-from util_funcs import load_jsonl, stemming_tokenizer
+from util_funcs import load_jsonl, stemming_tokenizer # "stemming_tokenizer" needs to be imported since it is used in the imported TF-IDF model
 
 def load_doc_id_map(path):
     with open(path, 'r') as f:
@@ -20,10 +20,9 @@ def load_tfidf(vectorizer_path, wm_path):
     tfidf_wm = pickle.load(open(wm_path, "rb"))
     return tfidfvectorizer, tfidf_wm
 
-def get_text_related_docs(train_data, doc_id_map, args):
-    batch_size = args.batch_size
-    nr_of_docs = args.nr_of_docs
-    tfidf_vectorizer, tfidf_wm = load_tfidf(args.vectorizer_path, args.wm_path)
+def get_text_related_docs(train_data, doc_id_map, batch_size, 
+        nr_of_docs, vectorizer_path, wm_path):
+    tfidf_vectorizer, tfidf_wm = load_tfidf(vectorizer_path, wm_path)
     nr_of_queries = len(train_data)
     batches = math.ceil(nr_of_queries / batch_size)
 
@@ -54,10 +53,9 @@ def get_text_related_docs(train_data, doc_id_map, args):
     return related_docs
 
 
-def get_title_related_docs(train_data, doc_id_map, args):
-    batch_size = args.batch_size
-    nr_of_docs = args.nr_of_docs
-    title_vectorizer, title_wm = load_tfidf(args.title_vectorizer_path, args.title_wm_path)
+def get_title_related_docs(train_data, doc_id_map, batch_size, nr_of_docs,
+        title_vectorizer_path, title_wm_path):
+    title_vectorizer, title_wm = load_tfidf(title_vectorizer_path, title_wm_path)
     nr_of_queries = len(train_data)
     batches = math.ceil(nr_of_queries / batch_size)
 
@@ -87,11 +85,15 @@ def get_title_related_docs(train_data, doc_id_map, args):
     del title_vectorizer, title_wm
     return related_titles
 
-def get_top_k_docs(train_data, args):
-    doc_id_map = load_doc_id_map(args.doc_id_map_path)
+def get_top_k_docs(train_data, doc_id_map_path, batch_size, 
+        nr_of_docs, vectorizer_path, wm_path, title_vectorizer_path,
+        title_wm_path):
+    doc_id_map = load_doc_id_map(doc_id_map_path)
     
-    text_related_docs = get_text_related_docs(train_data, doc_id_map, args)
-    title_related_docs = get_title_related_docs(train_data, doc_id_map, args)
+    text_related_docs = get_text_related_docs(train_data, doc_id_map, 
+        batch_size, nr_of_docs, vectorizer_path, wm_path)
+    title_related_docs = get_title_related_docs(train_data, doc_id_map, 
+        batch_size, nr_of_docs, title_vectorizer_path, title_wm_path)
     merged_docs = [list(set(x + y)) for x, y in zip(text_related_docs, title_related_docs)]
 
     return merged_docs
@@ -166,7 +168,9 @@ def main():
     train_data = train_data[1:]
 
     print("Getting the top k docs...")
-    top_k_docs = get_top_k_docs(train_data, args)
+    top_k_docs = get_top_k_docs(train_data, args.doc_id_map_path, 
+        args.batch_size, args.nr_of_docs, args.vectorizer_path, 
+        args.wm_path, args.title_vectorizer_path, args.title_wm_path)
     print("Finished getting the top k docs")
 
     store_top_k_docs(top_k_docs, train_data, args.out_path, args.nr_of_docs)

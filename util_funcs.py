@@ -1,3 +1,4 @@
+from argparse import ArgumentError, ArgumentTypeError
 import os
 import sys
 import jsonlines
@@ -31,6 +32,16 @@ def load_jsonl(path):
         for doc in reader:
             result.append(doc)
     return result
+
+def store_jsonl(data, file_path):
+    if type(data) != list:
+        raise ArgumentTypeError("'data' needs to be a list")
+    if ".jsonl" not in file_path:
+        raise ArgumentError("'file_path' needs to include the name of the output file")
+    with jsonlines.open(file_path, mode='w') as f:
+        for d in data:
+            f.write(d)
+
 
 def replace_entities(sent):
     if not sent:
