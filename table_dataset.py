@@ -11,10 +11,9 @@ def collate_fn(batch):
     return torch.utils.data.dataloader.default_collate(batch)
 
 class TableDataset(torch.utils.data.Dataset):
-    def __init__(self, data, tokenizer, table_csv_path):
+    def __init__(self, data, tokenizer):
         self.data = data
         self.tokenizer = tokenizer
-        self.table_csv_path = table_csv_path
     def __getitem__(self, idx):
         item = self.data.iloc[idx]
         table = pd.read_csv(item.table_file).astype(str) # be sure to make your table data text only

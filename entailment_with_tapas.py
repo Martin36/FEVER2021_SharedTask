@@ -56,7 +56,6 @@ def train_model(train_dataloader, device, model_path, tapas_model_name):
 
 def main():
     parser = argparse.ArgumentParser(description="Extracts the text from the feverous db and creates a corpus")
-    parser.add_argument("--table_csv_path", default=None, type=str, help="Path to the folder containing the csv tables")
     parser.add_argument("--train_csv_path", default=None, type=str, help="Path to the csv file containing the training examples")
     parser.add_argument("--tapas_model_name", default='google/tapas-base', type=str, help="Name of the pretrained tapas model")
     parser.add_argument("--model_path", default=None, type=str, help="Path to the output folder for the model")
@@ -64,8 +63,6 @@ def main():
 
     args = parser.parse_args()
 
-    if not args.table_csv_path:
-        raise RuntimeError("Invalid table csv path")
     if not args.train_csv_path:
         raise RuntimeError("Invalid train csv path")
     if ".csv" not in args.train_csv_path:
@@ -85,7 +82,7 @@ def main():
         "answer_text": ast.literal_eval
     })
 
-    train_dataset = TableDataset(data, tokenizer, args.table_csv_path)
+    train_dataset = TableDataset(data, tokenizer)
     # train_dataset = nc.SafeDataset(train_dataset)
     train_dataloader = torch.utils.data.DataLoader(train_dataset, 
         batch_size=args.batch_size, drop_last=True, collate_fn=collate_fn)

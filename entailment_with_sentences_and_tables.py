@@ -7,39 +7,6 @@ import pandas as pd
 from transformers import RobertaTokenizerFast, RobertaModel, TapasTokenizer
 
 
-class PredictionNetwork(nn.Module):
-
-    def __init__(self, seq_len, hidden_state_len):
-        super(PredictionNetwork, self).__init__()
-        output_dim = 3  # there are 3 different labels
-        input_dim = 2*seq_len*hidden_state_len
-
-        self.flatten = nn.Flatten()
-        self.linear_relu_stack = nn.Sequential(
-            nn.Linear(input_dim, 512),
-            nn.ReLU(),
-            nn.Linear(512, 512),
-            nn.ReLU(),
-            nn.Linear(512, output_dim),
-            nn.Softmax(dim=1)
-        )
-
-    def forward(self, x):
-        x = self.flatten(x)
-        logits = self.linear_relu_stack(x)
-        return logits
-
-device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
-
-seq_len = 512
-hidden_state_len = 768
-model = PredictionNetwork(seq_len, hidden_state_len).to(device)
-X = torch.rand(1, 2*seq_len, hidden_state_len, device=device)
-logits = model(X)
-y_pred = logits.argmax(1)
-print(f"Predicted class: {logits}")
-print(f"Predicted class: {y_pred}")
-
 
 def main():
     parser = argparse.ArgumentParser(description="Extracts the text from the feverous db and creates a corpus")
@@ -101,6 +68,6 @@ def main():
 
 
 
-# if __name__ == "__main__":
-    # main()
+if __name__ == "__main__":
+    main()
 

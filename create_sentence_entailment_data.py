@@ -49,7 +49,9 @@ def create_sentence_entailment_data(db, input_data):
         merged_sents = " ".join(sentences)
         claim = d["claim"]
         label = d["label"]
+        id = d["id"]
         out_obj = {
+            "id": id,
             "evidence": merged_sents,
             "claim": claim,
             "label": label
