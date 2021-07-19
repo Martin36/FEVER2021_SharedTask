@@ -33,6 +33,15 @@ def predict_veracity(claim, evidence):
 
     return target
 
+def get_veracity_label(claim, evidence):
+    predicted_label = predict_veracity(claim, evidence)
+    predicted_label = "".join(predicted_label)
+    if predicted_label not in MNLI_TO_FEVER_MAP.keys():
+        return "NOT ENOUGH INFO"
+    else:
+        return MNLI_TO_FEVER_MAP[predicted_label]
+    
+
 def test_model(data):
     num_correct = 0
     counter = 0

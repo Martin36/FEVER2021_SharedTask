@@ -2,11 +2,12 @@ import argparse
 from collections import defaultdict
 import torch
 
-from transformers import T5ForConditionalGeneration, T5Tokenizer
 from tqdm import tqdm
 
 from document_retrieval import get_top_k_docs
 from sentence_retrieval import get_top_sents_for_claim
+from entailment_with_t5 import get_veracity_label
+
 from util_funcs import load_jsonl, stemming_tokenizer # "stemming_tokenizer" needs to be imported since it is used in the imported TF-IDF model
 
 # model = T5ForConditionalGeneration.from_pretrained("t5-small")
@@ -23,6 +24,7 @@ def main():
     parser.add_argument("--wm_path", default=None, type=str, help="Path to the TF-IDF word model")
     parser.add_argument("--title_vectorizer_path", default=None, type=str, help="Path to the vectorizer object")
     parser.add_argument("--title_wm_path", default=None, type=str, help="Path to the TF-IDF word model")
+    parser.add_argument("--sentence_only", default=False, action="store_true", help="If this flag is provided, only sentence evidence will be considered")
 
     args = parser.parse_args()
 
@@ -53,6 +55,7 @@ def main():
 
 
     claim = "Asiatic Society of Bangladesh(housed in Nimtali) is a non political organization renamed in 1972, Ahmed Hasan Dani played an important role in its founding."
+    correct_label = "SUPPORTS" # Not sure that this is actually correct
     # Step 1: Retrieve top docs
     data = [{"claim": claim}]
     batch_size = 1
@@ -69,10 +72,26 @@ def main():
     nr_of_sents = 5
     top_sents = get_top_sents_for_claim(args.db_path, top_k_docs, claim,
         nr_of_sents)
-
     print(top_sents)
 
     # Step 3: Extract tables from docs
+    # TODO: Needs to incorporate the tapas model
+
+    # Step 4: Table cell extraction
+    # TODO: Waiting for Step 3
+
+    # Step 5: Claim verification
+    # TODO: How to do this by incorporating both sentences and tables?
+    sentence_evidence = " ".join(top_sents)
+    if args.sentence_only:
+        label = get_veracity_label(claim, sentence_evidence)
+        print()
+        print("=============== Prediction ==============")
+        print("Claim: {}".format(claim))
+        print("Sentence evidence: {}".format(sentence_evidence))
+        print("Predicted label: {}".format(label))
+        print("Correct label: {}".format(correct_label))
+        print("=========================================")
 
 
 
