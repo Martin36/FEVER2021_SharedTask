@@ -4,6 +4,7 @@ import sys
 import jsonlines
 import re
 import nltk
+import json
 
 from nltk.stem.porter import PorterStemmer
 from nltk.corpus import stopwords
@@ -26,7 +27,16 @@ def extract_sents(doc_json):
     sents = [sent.lower() for sent in sents]
     return sents
 
-def load_jsonl(path):
+def load_json(path: str):
+    data = None
+    if not ".json" in path:
+        raise ArgumentError("'path' is not pointing to a json file")
+    with open(path) as f:
+        data = json.loads(f.read())
+    return data
+
+
+def load_jsonl(path: str):
     result = []
     with jsonlines.open(path) as reader:
         for doc in reader:

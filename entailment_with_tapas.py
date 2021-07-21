@@ -13,17 +13,6 @@ torch.autograd.set_detect_anomaly(True)
 
 def train_model(train_dataloader, device, model_path, tapas_model_name):
     config = TapasConfig.from_pretrained('{}-finetuned-wtq'.format(tapas_model_name))
-    # config = TapasConfig(
-    #     num_aggregation_labels = 4,
-    #     use_answer_as_supervision = True,
-    #     answer_loss_cutoff = 0.664694,
-    #     cell_selection_preference = 0.207951,
-    #     huber_loss_delta = 0.121194,
-    #     init_cell_selection_weights_to_zero = True,
-    #     select_one_column = True,
-    #     allow_empty_column_selection = False,
-    #     temperature = 0.0352513,
-    # )
     model = TapasForQuestionAnswering.from_pretrained(tapas_model_name, config=config)
     optimizer = AdamW(model.parameters(), lr=5e-5)
     model.to(device)
@@ -88,7 +77,6 @@ def main():
         batch_size=args.batch_size, drop_last=True, collate_fn=collate_fn)
     train_model(train_dataloader, device, args.model_path, args.tapas_model_name)
     print("Finished training the model")
-    print("{} samples could not be used".format(stats["unusable_samples"]))
 
 
 if __name__ == "__main__":
