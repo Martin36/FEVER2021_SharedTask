@@ -1,0 +1,11 @@
+{
+    "python.linting.pylintArgs": [
+        "--init-hook='import sys; sys.path.append('/home/martin/FEVER2021_SharedTask/FEVEROUS/src')"
+    ],
+    "python.autoComplete.extraPaths": [
+        "/home/martin/FEVER2021_SharedTask/FEVEROUS/src"
+    ],
+    "python.analysis.extraPaths": [
+        "/home/martin/FEVER2021_SharedTask/FEVEROUS/src"
+    ],
+}

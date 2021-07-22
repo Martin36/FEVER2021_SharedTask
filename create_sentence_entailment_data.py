@@ -64,8 +64,8 @@ def create_sentence_entailment_data(db, input_data):
 def main():
     parser = argparse.ArgumentParser(description="Converts the FEVEROUS training data to a format compatible with the input for the sentence entailment model")
     parser.add_argument("--db_path", default=None, type=str, help="Path to the FEVEROUS database")
-    parser.add_argument("--input_data_path", default=None, type=str, help="Path to the input data file")
-    parser.add_argument("--output_data_path", default=None, type=str, help="Path to the output data folder")
+    parser.add_argument("--input_data_file", default=None, type=str, help="Path to the input data file")
+    parser.add_argument("--output_data_file", default=None, type=str, help="Path to the output data folder")
 
     args = parser.parse_args()
         
@@ -73,25 +73,23 @@ def main():
         raise RuntimeError("Invalid database path")
     if ".db" not in args.db_path:
         raise RuntimeError("The database path should include the name of the db file")
-    if not args.input_data_path:
+    if not args.input_data_file:
         raise RuntimeError("Invalid input data path")
-    if ".jsonl" not in args.input_data_path:
+    if ".jsonl" not in args.input_data_file:
         raise RuntimeError("The input data path should include the name of the jsonl file")
+    if not args.output_data_file:
+        raise RuntimeError("Invalid output data path")
+    if ".jsonl" not in args.output_data_file:
+        raise RuntimeError("The output data path should include the name of the jsonl file")
     
-    out_dir = os.path.dirname(args.output_data_path)
-    if not os.path.exists(out_dir):
-        print("Output directory doesn't exist. Creating {}".format(out_dir))
-        os.makedirs(out_dir)
-
     db = FeverousDB(args.db_path)
-    input_data = load_jsonl(args.input_data_path)
+    input_data = load_jsonl(args.input_data_file)
     input_data = input_data[1:]
     
     sentence_entailment_data = create_sentence_entailment_data(db, input_data)
 
-    out_file = out_dir + "/data.jsonl"
-    print("Storing data in: {} ...".format(out_file))
-    store_jsonl(sentence_entailment_data, out_file)
+    print("Storing data in: {} ...".format(args.output_data_file))
+    store_jsonl(sentence_entailment_data, args.output_data_file)
     print("Finished storing entailment data")
 
 

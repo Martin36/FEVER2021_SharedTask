@@ -1,0 +1,534 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: Current File",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "FEVER: Create corpus",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/create_corpus.py",
+            "console": "integratedTerminal",
+            "args":[
+                "--db_path=/media/martin/Windows/data/feverous_wikiv1.db", 
+                "--out_path=data/corpus/"
+            ],
+        },
+        {
+            "name": "FEVER: Create TF-IDF",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/create_tfidf.py",
+            "console": "integratedTerminal",
+            "args":[
+                "--use_stemming", 
+                "--corpus_path=data/corpus/",
+                "--out_path=tfidf/"
+            ],
+        },
+        {
+            "name": "FEVER: Create title TF-IDF",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/create_title_tfidf.py",
+            "console": "integratedTerminal",
+            "args":[
+                "--corpus_path=data/corpus/",
+                "--out_path=tfidf/",
+                "--n_gram_min=2",
+                "--n_gram_max=2"
+            ],
+        },
+        {
+            "name": "FEVER: Retrieve documents",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/document_retrieval.py",
+            "console": "integratedTerminal",
+            "args":[
+                "--doc_id_map_path=tfidf/doc_id_map.json", 
+                "--train_data_path=train_data/train.jsonl", 
+                "--vectorizer_path=tfidf/vectorizer-stemmed-32bit.pickle",
+                "--wm_path=tfidf/tfidf_wm-stemmed-32bit.pickle",
+                "--title_vectorizer_path=tfidf/title_vectorizer-32bit.pickle",
+                "--title_wm_path=tfidf/title_tfidf_wm-32bit.pickle",
+                "--out_path=data/document_retrieval"
+            ],
+        },
+        {
+            "name": "FEVER: Calculate document retrieval accuracy",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/calculate_doc_retrieval_accuracy.py",
+            "console": "integratedTerminal",
+            "args":[
+                "--train_data_path=train_data/train.jsonl", 
+                "--top_k_docs_path=data/document_retrieval/top_10_docs.jsonl",
+            ],
+        },
+        {
+            "name": "FEVER: Retrieve top sentences",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/sentence_retrieval.py",
+            "console": "integratedTerminal",
+            "args":[
+                "--db_path=/media/martin/Windows/data/feverous_wikiv1.db", 
+                "--top_docs_path=data/document_retrieval/top_10_docs.jsonl",
+                "--out_path=data/document_retrieval",
+                "--n_gram_min=1",
+                "--n_gram_max=3"
+            ],
+        },
+        {
+            "name": "FEVER: Calculate sentence retrieval accuracy",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/calculate_sentence_retrieval_accuracy.py",
+            "console": "integratedTerminal",
+            "args":[
+                "--train_data_path=train_data/train.jsonl", 
+                "--top_k_sents_path=data/document_retrieval/top_5_sents.jsonl",
+                "--k=5"
+            ],
+        },
+        {
+            "name": "FEVER: Create Tapas Train Data",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/create_tapas_data.py",
+            "console": "integratedTerminal",
+            "args":[
+                "--db_path=/media/martin/Windows/data/feverous_wikiv1.db", 
+                "--train_data_path=train_data/train.jsonl", 
+                "--out_path=data/tapas/train/"
+            ],
+        },
+        {
+            "name": "FEVER: Create Tapas Dev Data",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/create_tapas_data.py",
+            "console": "integratedTerminal",
+            "args":[
+                "--db_path=/media/martin/Windows/data/feverous_wikiv1.db", 
+                "--train_data_path=train_data/dev.jsonl", 
+                "--out_path=data/tapas/dev/"
+            ],
+        },
+        {
+            "name": "Tapas: Create Retrieval Data",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/tapas/tapas/retrieval/create_retrieval_data_main.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--input_interactions_dir=data/tapas/tf_records/interactions",
+                "--input_tables_dir=data/tapas/tf_records/tables",
+                "--output_dir=data/tapas/tf_records/tf_examples",
+                "--vocab_file=tapas_dual_encoder_proj_256_tiny/vocab.txt",
+                "--max_seq_length=512",
+                "--max_column_id=512",
+                "--max_row_id=512",
+                "--use_document_title"
+            ]
+        },
+        {
+            "name": "Tapas: Table Retriever Experiment (Train)",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/tapas/tapas/experiments/table_retriever_experiment.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--do_train",
+                "--keep_checkpoint_max=40",
+                "--model_dir=tapas_models",
+                "--input_file_train=data/tapas/tf_records/tf_examples/train.tfrecord",
+                "--bert_config_file=tapas_dual_encoder_proj_256_tiny/bert_config.json",
+                "--init_checkpoint=tapas_dual_encoder_proj_256_tiny/model.ckpt",
+                "--init_from_single_encoder=false",
+                "--down_projection_dim=256",
+                "--num_train_examples=65000",
+                "--learning_rate=1.25e-5",
+                "--train_batch_size=256",
+                "--warmup_ratio=0.01",
+                "--max_seq_length=512"
+            ]
+        },
+        {
+            "name": "Tapas: Table Retriever Experiment (Eval)",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/tapas/tapas/experiments/table_retriever_experiment.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--do_predict",
+                "--model_dir=tapas_models",
+                "--input_file_eval=data/tapas/tf_records/tf_examples/dev.tfrecord",
+                "--bert_config_file=tapas_dual_encoder_proj_256_tiny/bert_config.json",
+                "--init_from_single_encoder=false",
+                "--down_projection_dim=256",
+                "--eval_batch_size=32",
+                "--num_train_examples=65000",
+                "--max_seq_length=512"
+            ]
+        },
+        {
+            "name": "Tapas: Table Retriever Predict (Train)",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/tapas/tapas/experiments/table_retriever_experiment.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--do_predict",
+                "--model_dir=tapas_models",
+                "--prediction_output_dir=tapas_models/train",
+                "--evaluated_checkpoint_metric=precision_at_1",
+                "--input_file_predict=data/tapas/tf_records/tf_examples/train.tfrecord",
+                "--bert_config_file=tapas_dual_encoder_proj_256_tiny/bert_config.json",
+                "--init_from_single_encoder=false",
+                "--down_projection_dim=256",
+                "--eval_batch_size=32",
+                "--max_seq_length=512"
+            ]
+        },
+        {
+            "name": "Tapas: Table Retriever Predict (Tables)",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/tapas/tapas/experiments/table_retriever_experiment.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--do_predict",
+                "--model_dir=tapas_models",
+                "--prediction_output_dir=tapas_models/tables",
+                "--evaluated_checkpoint_metric=precision_at_1",
+                "--input_file_predict=data/tapas/tf_records/tf_examples/tables.tfrecord",
+                "--bert_config_file=tapas_dual_encoder_proj_256_tiny/bert_config.json",
+                "--init_from_single_encoder=false",
+                "--down_projection_dim=256",
+                "--eval_batch_size=32",
+                "--max_seq_length=512"
+            ]
+        },
+        {
+            "name": "Tapas: Table Retriever Predict (Test)",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/tapas/tapas/experiments/table_retriever_experiment.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--do_predict",
+                "--model_dir=tapas_models",
+                "--prediction_output_dir=tapas_models/test",
+                "--evaluated_checkpoint_metric=precision_at_1",
+                "--input_file_predict=data/tapas/tf_records/tf_examples/test.tfrecord",
+                "--bert_config_file=tapas_dual_encoder_proj_256_tiny/bert_config.json",
+                "--init_from_single_encoder=false",
+                "--down_projection_dim=256",
+                "--eval_batch_size=32",
+                "--max_seq_length=512"
+            ]
+        },
+        {
+            "name": "Tapas: Generate Retrieval Results (Train)",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/tapas/tapas/scripts/eval_table_retriever.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--prediction_files_local=tapas_models/train/predict_results_253.tsv",
+                "--prediction_files_global=tapas_models/tables/predict_results_253.tsv",
+                "--retrieval_results_file_path=tapas_models/train_knn.jsonl"
+            ]
+        },
+        {
+            "name": "Tapas: Generate Retrieval Results (Test)",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/tapas/tapas/scripts/eval_table_retriever.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--prediction_files_local=tapas_models/test/predict_results_253.tsv",
+                "--prediction_files_global=tapas_models/tables/predict_results_253.tsv",
+                "--retrieval_results_file_path=tapas_models/test_knn.jsonl"
+            ]
+        },
+        {
+            "name": "Tapas: Generate Retrieval Results (Dev)",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/tapas/tapas/scripts/eval_table_retriever.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--prediction_files_local=tapas_models/eval_results_253.tsv",
+                "--prediction_files_global=tapas_models/tables/predict_results_253.tsv",
+                "--retrieval_results_file_path=tapas_models/dev_knn.jsonl"
+            ]
+        },
+        {
+            "name": "Tapas: Create E2E Interactions",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/tapas/tapas/retrieval/create_e2e_interactions.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--input_dir=data/tapas/tf_records/interactions",
+                "--table_file=data/tapas/tf_records/tables/tables.tfrecord",
+                "--output_dir=data/tapas/tf_records/e2e/retrieval/interactions"
+            ]
+        },
+        {
+            "name": "Tapas: Run main task NQ_RETRIEVAL",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/tapas/tapas/run_task_main.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--task=NQ_RETRIEVAL",
+                "--verbosity=-1",
+                "--output_dir=data/tapas/tf_records/e2e",
+                "--input_dir=data/tapas/tf_records/e2e",
+                "--bert_vocab_file=tapas_dual_encoder_proj_256_tiny/vocab.txt",
+                "--mode=create_data",
+                "--use_document_title",
+                "--update_answer_coordinates",
+                "--drop_rows_to_fit"
+            ]
+        },
+        {
+            "name": "Tapas: Fine Tune Model",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/tapas/tapas/run_task_main.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--task=NQ_RETRIEVAL",
+                "--output_dir=data/tapas/tf_records/nq/sample/e2e",
+                "--model_dir=tapas_models/nq_e2e",
+                "--init_checkpoint=tapas_dual_encoder_proj_256_tiny/model.ckpt",
+                "--bert_config_file=tapas_dual_encoder_proj_256_tiny/bert_config.json",
+                "--mode=train"
+            ]
+        },
+        {
+            "name": "Tapas: Predict and Evaluate",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/tapas/tapas/run_task_main.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--task=NQ_RETRIEVAL",
+                "--output_dir=data/tapas/tf_records/nq/sample/e2e",
+                "--model_dir=tapas_models/nq_e2e",
+                "--init_checkpoint=tapas_dual_encoder_proj_256_tiny/model.ckpt",
+                "--bert_config_file=tapas_dual_encoder_proj_256_tiny/bert_config.json",
+                "--bert_vocab_file=tapas_dual_encoder_proj_256_tiny/vocab.txt",
+                "--mode=predict_and_evaluate"
+            ]
+        },
+        {
+            "name": "FEVER: Create Tapas Train Tables",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/create_tapas_tables.py",
+            "console": "integratedTerminal",
+            "args":[
+                "--tapas_train_path=data/tapas/tapas_train.jsonl", 
+                "--out_path=data/tapas/train_data/",
+                "--table_out_path=data/tapas/tables/",
+            ],
+        },
+        {
+            "name": "FEVER: Create Tapas Dev Tables",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/create_tapas_tables.py",
+            "console": "integratedTerminal",
+            "args":[
+                "--tapas_train_path=data/tapas/dev/tapas_dev.jsonl", 
+                "--out_path=data/tapas/dev/",
+                "--table_out_path=data/tapas/dev/tables/",
+                "--write_to_files=True"
+            ],
+        },
+        {
+            "name": "FEVER: Train tapas model",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/entailment_with_tapas.py",
+            "console": "integratedTerminal",
+            "args":[
+                "--train_csv_path=data/tapas/train_data/tapas_data.csv",
+                "--tapas_model_name=google/tapas-tiny",
+                "--model_path=models/",
+                "--batch_size=32"
+            ],
+            "justMyCode": false
+        },
+        {
+            "name": "FEVER: Eval tapas model",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/entailment_with_tapas_predict.py",
+            "console": "integratedTerminal",
+            "args":[
+                "--table_csv_path=data/tapas/dev/tables/", 
+                "--eval_csv_path=data/tapas/dev/tapas_data.csv",
+                "--tapas_model_name=google/tapas-tiny",
+                "--model_path=models/tapas_model.pth",
+                "--batch_size=1",
+            ],
+            "justMyCode": false
+        },
+        {
+            "name": "FEVER: Create Sentence Entailment Data (Train)",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/create_sentence_entailment_data.py",
+            "console": "integratedTerminal",
+            "args":[
+                "--db_path=/media/martin/Windows/data/feverous_wikiv1.db", 
+                "--input_data_file=train_data/train.jsonl", 
+                "--output_data_file=data/sentence_entailment_train_data.jsonl",
+            ],
+        },
+        {
+            "name": "FEVER: Create Sentence Entailment Data (Eval)",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/create_sentence_entailment_data.py",
+            "console": "integratedTerminal",
+            "args":[
+                "--db_path=/media/martin/Windows/data/feverous_wikiv1.db", 
+                "--input_data_file=train_data/dev.jsonl", 
+                "--output_data_file=data/sentence_entailment_eval_data.jsonl",
+            ],
+        },
+        {
+            "name": "FEVER: Entailment with T5",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/entailment_with_t5.py",
+            "console": "integratedTerminal",
+            "args":[
+                "--train_data_path=data/sentence_entailment_train_data.jsonl",
+            ],
+            "justMyCode": false
+        },
+        {
+            "name": "FEVER: Run End 2 End",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/run_e2e.py",
+            "console": "integratedTerminal",
+            "args":[
+                "--db_path=/media/martin/Windows/data/feverous_wikiv1.db", 
+                "--doc_id_map_path=tfidf/doc_id_map.json", 
+                "--vectorizer_path=tfidf/vectorizer-stemmed-32bit.pickle",
+                "--wm_path=tfidf/tfidf_wm-stemmed-32bit.pickle",
+                "--title_vectorizer_path=tfidf/title_vectorizer-32bit.pickle",
+                "--title_wm_path=tfidf/title_tfidf_wm-32bit.pickle",
+            ],
+        },
+        {
+            "name": "FEVER: Create ID Label Map (Train)",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/create_id_label_map.py",
+            "console": "integratedTerminal",
+            "args":[
+                "--data_file=train_data/train.jsonl", 
+                "--out_file=data/id_label_map_train.json",
+            ],
+        },
+        {
+            "name": "FEVER: Create ID Label Map (Eval)",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/create_id_label_map.py",
+            "console": "integratedTerminal",
+            "args":[
+                "--data_file=train_data/dev.jsonl", 
+                "--out_file=data/id_label_map_eval.json",
+            ],
+        },
+        {
+            "name": "FEVER: Merge Table and Sentence Data (Train)",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/merge_table_and_sentence_data.py",
+            "console": "integratedTerminal",
+            "args":[
+                "--tapas_csv_file=data/tapas/train_data/tapas_data.csv",
+                "--sentence_data_file=data/sentence_entailment_train_data.jsonl",
+                "--id_label_map_file=data/id_label_map_train.json",
+                "--out_file=data/entailment_train_data.csv",
+            ],
+        },
+        {
+            "name": "FEVER: Merge Table and Sentence Data (Eval)",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/merge_table_and_sentence_data.py",
+            "console": "integratedTerminal",
+            "args":[
+                "--tapas_csv_file=data/tapas/dev/tapas_data.csv",
+                "--sentence_data_file=data/sentence_entailment_eval_data.jsonl",
+                "--id_label_map_file=data/id_label_map_eval.json",
+                "--out_file=data/entailment_eval_data.csv",
+            ],
+        },
+        {
+            "name": "FEVER: Train Veracity Prediction Model",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/train_veracity_prediction_model.py",
+            "console": "integratedTerminal",
+            "args":[
+                "--train_csv_path=data/entailment_train_data.csv",
+                "--batch_size=32",
+                "--out_path=models/",
+            ],
+            "justMyCode": false
+        },
+        {
+            "name": "FEVER: Eval Veracity Prediction Model",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/eval_veracity_prediction_model.py",
+            "console": "integratedTerminal",
+            "args":[
+                "--eval_csv_file=data/entailment_eval_data.csv",
+                "--model_file=models/veracity_prediction_model.pth",
+                "--batch_size=16",
+            ],
+            "justMyCode": false
+        },
+        {
+            "name": "FEVER: Retrieve Tables with Tapas",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/retrieve_tables_with_tapas.py",
+            "console": "integratedTerminal",
+            "args":[
+                "--task=NQ_RETRIEVAL",
+                "--output_dir=data/tapas/tf_records/nq/sample/e2e",
+                "--model_dir=tapas_models/nq_e2e",
+                "--init_checkpoint=tapas_dual_encoder_proj_256_tiny/model.ckpt",
+                "--bert_config_file=tapas_dual_encoder_proj_256_tiny/bert_config.json",
+                "--bert_vocab_file=tapas_dual_encoder_proj_256_tiny/vocab.txt",
+                "--mode=predict_and_evaluate",
+            ],
+            "justMyCode": false
+        },
+    ]
+}
