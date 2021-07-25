@@ -32,6 +32,8 @@ def create_table_dict(table):
     table_dict['page'] = table.page
 
     # Keep only rows that have the same nr of columns as the header
+    # This is probably not needed, but since it works now, this stays so nothing breaks
+    # TODO: Figure out if this is really needed
     table_dict['rows'] = [row for row in table_dict['rows'] if len(row) == len(table_dict['header'])]
     
     return table_dict

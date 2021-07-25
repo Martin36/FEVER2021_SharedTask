@@ -520,13 +520,10 @@
             "program": "${workspaceFolder}/retrieve_tables_with_tapas.py",
             "console": "integratedTerminal",
             "args":[
-                "--task=NQ_RETRIEVAL",
                 "--output_dir=data/tapas/tf_records/nq/sample/e2e",
                 "--model_dir=tapas_models/nq_e2e",
                 "--init_checkpoint=tapas_dual_encoder_proj_256_tiny/model.ckpt",
                 "--bert_config_file=tapas_dual_encoder_proj_256_tiny/bert_config.json",
-                "--bert_vocab_file=tapas_dual_encoder_proj_256_tiny/vocab.txt",
-                "--mode=predict_and_evaluate",
             ],
             "justMyCode": false
         },

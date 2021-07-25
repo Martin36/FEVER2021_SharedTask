@@ -1,3 +1,4 @@
+import os, sys
 import argparse
 from collections import defaultdict
 import torch
@@ -9,11 +10,32 @@ from sentence_retrieval import get_top_sents_for_claim
 from entailment_with_t5 import get_veracity_label
 
 from util_funcs import load_jsonl, stemming_tokenizer # "stemming_tokenizer" needs to be imported since it is used in the imported TF-IDF model
+from create_tapas_data import create_table_dict
+
+DIR_PATH = os.path.abspath(os.getcwd())
+
+FEVEROUS_PATH = DIR_PATH + "/FEVEROUS/src"
+sys.path.insert(0, FEVEROUS_PATH)
+
+from database.feverous_db import FeverousDB
+from utils.wiki_page import WikiPage
 
 # model = T5ForConditionalGeneration.from_pretrained("t5-small")
 # tokenizer = T5Tokenizer.from_pretrained("t5-small")
 
-
+def get_tables_from_docs(db: FeverousDB, doc_names: "list[str]"):
+    """ 
+        Takes a list of document names and returns a dict with 
+        a list of tables for each document
+    """
+    result = {}
+    for doc_name in doc_names:
+        doc_json = db.get_doc_json(doc_name)
+        page = WikiPage(doc_name, doc_json)
+        tables = page.get_tables()
+        table_dicts = [create_table_dict(table) for table in tables]
+        result[doc_name] = table_dicts
+    return result
 
 
 def main():
@@ -53,6 +75,7 @@ def main():
     if ".pickle" not in args.title_wm_path:
         raise RuntimeError("The title vectorizer path should include the name of the .pickle file")
 
+    db = FeverousDB(args.db_path)
 
     claim = "Asiatic Society of Bangladesh(housed in Nimtali) is a non political organization renamed in 1972, Ahmed Hasan Dani played an important role in its founding."
     correct_label = "SUPPORTS" # Not sure that this is actually correct
@@ -67,6 +90,8 @@ def main():
 
     top_k_docs = top_k_docs[0]
     print(top_k_docs)
+
+    doc_tables_dict = get_tables_from_docs(db, top_k_docs)
 
     # Step 2: Retrieve top sentences
     nr_of_sents = 5
