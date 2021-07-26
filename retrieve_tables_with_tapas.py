@@ -28,51 +28,10 @@ sys.path.insert(0, FEVEROUS_PATH)
 from database.feverous_db import FeverousDB
 from utils.wiki_page import WikiPage
 
-def main():
-    """ This script should use an already trained tapas model """
-    parser = argparse.ArgumentParser(description="Retrives the most relevant tables from the previously retrieved documents")
-    parser.add_argument("--db_path", default=None, type=str, help="Path to the FEVEROUS database")
-    parser.add_argument("--bert_config_file", default=None, type=str, help="Path to the bert config file")
-    parser.add_argument("--init_checkpoint", default=None, type=str, help="Path to the bert config file")
-    parser.add_argument("--model_dir", default=None, type=str, help="Path to the bert config file")
-    parser.add_argument("--output_dir", default=None, type=str, help="Path to the output folder for the model")
 
-    args = parser.parse_args()
-    
-    if not args.db_path:
-        raise RuntimeError("Invalid database path")
-    if ".db" not in args.db_path:
-        raise RuntimeError("The database path should include the name of the .db file")
-    if not args.bert_config_file:
-        raise RuntimeError("Invalid bert config file")
-    if ".json" not in args.bert_config_file:
-        raise RuntimeError("The bert config file should include the name of the .json file")
-    if not args.init_checkpoint:
-        raise RuntimeError("Invalid init checkpoint path")
-    if ".ckpt" not in args.init_checkpoint:
-        raise RuntimeError("The init checkpoint path should include the name of the .ckpt file")
-    if not args.model_dir:
-        raise RuntimeError("Invalid model dir path")
-    if not args.output_dir:
-        raise RuntimeError("Invalid output dir path")
+MAX_SEQ_LENGTH = 512
 
-    output_dir = os.path.dirname(args.output_dir)
-    if not os.path.exists(output_dir):
-        print("Output directory doesn't exist. Creating {}".format(output_dir))
-        os.makedirs(output_dir)
-
-    db = FeverousDB(args.db_path)
-
-    nr_tables_to_retrieve = 5
-
-    ######################################################################    
-    ############## Parse tables from the retrieved docs ##################
-    ######################################################################    
-
-    claim = "Aramais Yepiskoposyan played for FC Ararat Yerevan, an Armenian football club based in Yerevan during 1986 to 1991."
-    top_k_docs = ['2019–20 FC Ararat Yerevan season', 'Spartak Yerevan FC', '2018–19 FC Ararat Yerevan season', 'FC Ararat Yerevan', '2017–18 FC Ararat Yerevan season', 'Aramais Yepiskoposyan', 'Mayor of Yerevan', 'Yerevan', 'FC Yerevan']
-    doc_tables_dict = get_tables_from_docs(db, top_k_docs)
-
+def create_interaction_protos(doc_tables_dict):
     # Convert the tables to proto format
     interactions = []
     for doc_name, table_dicts in doc_tables_dict.items():
@@ -100,13 +59,12 @@ def main():
             interaction.table.CopyFrom(table_proto)
 
             interactions.append(interaction)
+    return interactions
 
-    if len(interactions) <= nr_tables_to_retrieve:
-        return doc_tables_dict
 
+def store_tables_and_interactions(claim, interactions, output_dir):
     # Store tables in .tfrecord
     vocab_file = "tapas_dual_encoder_proj_256_tiny/vocab.txt"
-    max_seq_length = 512
     max_column_id = 512
     max_row_id = 512
     cell_trim_length = -1
@@ -114,7 +72,7 @@ def main():
 
     config=tf_example_utils.RetrievalConversionConfig(
         vocab_file=vocab_file,
-        max_seq_length=max_seq_length,
+        max_seq_length=MAX_SEQ_LENGTH,
         max_column_id=max_column_id,
         max_row_id=max_row_id,
         strip_column_names=False,
@@ -161,11 +119,10 @@ def main():
     with tf.io.TFRecordWriter(claim_filename) as writer:
         writer.write(serialized_input_example)
 
-    ######################################################################    
-    ################## Create the retriever model ########################    
-    ######################################################################    
+    return table_filename, claim_filename
 
-    bert_config = modeling.BertConfig.from_json_file(args.bert_config_file)
+def get_estimator(bert_config_file):
+    bert_config = modeling.BertConfig.from_json_file(bert_config_file)
 
     retriever_config = table_retriever_model.RetrieverConfig(
         bert_config=bert_config,
@@ -217,6 +174,10 @@ def main():
         eval_batch_size=32,
         predict_batch_size=32)
 
+    return estimator
+
+
+def create_table_representations(estimator, table_filename, output_dir):
     # input_fn for tables
     input_fn = functools.partial(
         table_retriever_model.input_fn,
@@ -224,17 +185,19 @@ def main():
         file_patterns=table_filename,
         data_format="tfrecord",
         is_training=False,
-        max_seq_length=max_seq_length,
+        max_seq_length=MAX_SEQ_LENGTH,
         compression_type="",
         use_mined_negatives=False,
         include_id=True)
-
 
     result = estimator.predict(input_fn=input_fn)
     # result = estimator.predict(input_fn=input_fn, checkpoint_path=checkpoint_path)
     tables_output_predict_file = os.path.join(output_dir, "retrieval_tables.tsv")
     table_retriever_experiment.write_predictions(result, tables_output_predict_file)
 
+    return tables_output_predict_file
+
+def create_claim_representations(estimator, claim_filename, output_dir):
     # input_fn for claim
     input_fn = functools.partial(
         table_retriever_model.input_fn,
@@ -242,7 +205,7 @@ def main():
         file_patterns=claim_filename,
         data_format="tfrecord",
         is_training=False,
-        max_seq_length=max_seq_length,
+        max_seq_length=MAX_SEQ_LENGTH,
         compression_type="",
         use_mined_negatives=False,
         include_id=True)
@@ -252,6 +215,10 @@ def main():
     claim_output_predict_file = os.path.join(output_dir, "retrieval_results.tsv")
     table_retriever_experiment.write_predictions(result, claim_output_predict_file)
 
+    return claim_output_predict_file
+
+
+def create_knn(claim_output_predict_file, tables_output_predict_file, output_dir):
     prediction_files_local = claim_output_predict_file
     prediction_files_global = tables_output_predict_file
     retrieval_results_file_path = os.path.join(output_dir, "test_knn.jsonl")
@@ -261,16 +228,91 @@ def main():
         prediction_files_global,
         make_tables_unique=True,
         retrieval_results_file_path=retrieval_results_file_path)
+    
+    return retrieval_results_file_path
 
+def get_top_k_tables(retrieval_results_file_path, nr_tables_to_retrieve):
     # Get the ids for the top k tables
     with open(retrieval_results_file_path) as f:
         knn = json.loads(f.read())
         knn["table_scores"] = knn["table_scores"][:nr_tables_to_retrieve]
         knn["table_ids"] = [table_score["table_id"] for table_score in knn["table_scores"]]
     
-    print("Retrieved tables: ")
-    print(knn["table_ids"])
+    return knn["table_ids"]
+
+
+def retrieve_tables(db, claim, top_docs, nr_tables_to_retrieve, 
+        output_dir, bert_config_file):
+
+    doc_tables_dict = get_tables_from_docs(db, top_docs)
+
+    interactions = create_interaction_protos(doc_tables_dict)
+    if len(interactions) <= nr_tables_to_retrieve:
+        table_ids = []
+        for doc_name, doc_tables in doc_tables_dict.items():
+            for i in range(len(doc_tables)):
+                table_id = "{}_{}".format(doc_name, i)
+                table_ids.append(table_id)
+        return table_ids
+
+    table_filename, claim_filename = store_tables_and_interactions(claim, 
+        interactions, output_dir)    
+    estimator = get_estimator(bert_config_file)
+    claim_output_predict_file = create_claim_representations(estimator, 
+        claim_filename, output_dir)
+    tables_output_predict_file = create_table_representations(estimator, 
+        table_filename, output_dir)
+    retrieval_results_file_path = create_knn(claim_output_predict_file, 
+        tables_output_predict_file, output_dir)
+    table_ids = get_top_k_tables(retrieval_results_file_path, 
+        nr_tables_to_retrieve)
+    return table_ids
+
+
+def main():
+    """ This script should use an already trained tapas model """
+    parser = argparse.ArgumentParser(description="Retrives the most relevant tables from the previously retrieved documents")
+    parser.add_argument("--db_path", default=None, type=str, help="Path to the FEVEROUS database")
+    parser.add_argument("--bert_config_file", default=None, type=str, help="Path to the bert config file")
+    parser.add_argument("--init_checkpoint", default=None, type=str, help="Path to the bert config file")
+    parser.add_argument("--model_dir", default=None, type=str, help="Path to the bert config file")
+    parser.add_argument("--output_dir", default=None, type=str, help="Path to the output folder for the model")
+
+    args = parser.parse_args()
     
+    if not args.db_path:
+        raise RuntimeError("Invalid database path")
+    if ".db" not in args.db_path:
+        raise RuntimeError("The database path should include the name of the .db file")
+    if not args.bert_config_file:
+        raise RuntimeError("Invalid bert config file")
+    if ".json" not in args.bert_config_file:
+        raise RuntimeError("The bert config file should include the name of the .json file")
+    if not args.init_checkpoint:
+        raise RuntimeError("Invalid init checkpoint path")
+    if ".ckpt" not in args.init_checkpoint:
+        raise RuntimeError("The init checkpoint path should include the name of the .ckpt file")
+    if not args.model_dir:
+        raise RuntimeError("Invalid model dir path")
+    if not args.output_dir:
+        raise RuntimeError("Invalid output dir path")
+
+    output_dir = os.path.dirname(args.output_dir)
+    if not os.path.exists(output_dir):
+        print("Output directory doesn't exist. Creating {}".format(output_dir))
+        os.makedirs(output_dir)
+
+    db = FeverousDB(args.db_path)
+    nr_tables_to_retrieve = 5
+    claim = "Aramais Yepiskoposyan played for FC Ararat Yerevan, an Armenian football club based in Yerevan during 1986 to 1991."
+    top_k_docs = ['2019–20 FC Ararat Yerevan season', 'Spartak Yerevan FC', '2018–19 FC Ararat Yerevan season', 'FC Ararat Yerevan', '2017–18 FC Ararat Yerevan season', 'Aramais Yepiskoposyan', 'Mayor of Yerevan', 'Yerevan', 'FC Yerevan']
+    
+    table_ids = retrieve_tables(db, claim, top_k_docs, 
+        nr_tables_to_retrieve, output_dir, args.bert_config_file)
+    
+    print("Retrieved tables: ")
+    print(table_ids)
+
 
 
 

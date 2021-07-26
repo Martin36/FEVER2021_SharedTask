@@ -93,7 +93,6 @@ def main():
     # TODO: Waiting for Step 3
 
     # Step 5: Claim verification
-    # TODO: How to do this by incorporating both sentences and tables?
     sentence_evidence = " ".join(top_sents)
     if args.sentence_only:
         label = get_veracity_label(claim, sentence_evidence)
@@ -104,6 +103,8 @@ def main():
         print("Predicted label: {}".format(label))
         print("Correct label: {}".format(correct_label))
         print("=========================================")
+
+    # TODO: Add functionality for both tables and sents
 
 
 
