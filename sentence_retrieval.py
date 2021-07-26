@@ -180,7 +180,8 @@ def main():
 
     print("Retrieving top {} sentences for each claim from the retrieved docs...".format(args.nr_of_sents))
     top_sents = get_top_sents_for_claims(args.db_path, 
-        args.top_docs_path, args.nr_of_sents)
+        args.top_docs_path, args.nr_of_sents, args.use_tables, 
+        args.n_gram_min, args.n_gram_max)
     print("Finished retrieving top sentences")
 
     print("Storing top sentences...")

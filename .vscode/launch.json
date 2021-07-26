@@ -514,6 +514,22 @@
             "justMyCode": false
         },
         {
+            "name": "FEVER: Retrieve Table cells",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/retrieve_table_cells.py",
+            "console": "integratedTerminal",
+            "args":[
+                "--table_csv_path=data/tapas/dev/tables/", 
+                "--eval_csv_path=data/tapas/dev/tapas_data.csv",
+                "--tapas_model_name=google/tapas-tiny",
+                "--model_path=models/tapas_model.pth",
+                "--batch_size=1",
+            ],
+            "justMyCode": false
+        },
+
+        {
             "name": "FEVER: Run End 2 End",
             "type": "python",
             "request": "launch",
@@ -526,7 +542,135 @@
                 "--wm_path=tfidf/tfidf_wm-stemmed-32bit.pickle",
                 "--title_vectorizer_path=tfidf/title_vectorizer-32bit.pickle",
                 "--title_wm_path=tfidf/title_tfidf_wm-32bit.pickle",
+                "--tapas_bert_config_file=tapas_dual_encoder_proj_256_tiny/bert_config.json",
+                "--table_output_dir=data/table_retrieval/",
+                "--out_dir=data/e2e/",
+                "--tapas_model_path=models/tapas_model.pth",
             ],
         },
-    ]
+        {
+            "name": "TEST: Retrieve documents",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/document_retrieval.py",
+            "console": "integratedTerminal",
+            "args":[
+                "--doc_id_map_path=tfidf/doc_id_map.json", 
+                "--train_data_path=train_data/feverous_test_unlabeled.jsonl", 
+                "--vectorizer_path=tfidf/vectorizer-stemmed-32bit.pickle",
+                "--wm_path=tfidf/tfidf_wm-stemmed-32bit.pickle",
+                "--title_vectorizer_path=tfidf/title_vectorizer-32bit.pickle",
+                "--title_wm_path=tfidf/title_tfidf_wm-32bit.pickle",
+                "--out_path=data/test",
+            ],
+        },
+        {
+            "name": "TEST: Retrieve top sentences",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/sentence_retrieval.py",
+            "console": "integratedTerminal",
+            "args":[
+                "--db_path=/media/martin/Windows/data/feverous_wikiv1.db", 
+                "--top_docs_path=data/test/top_10_docs.jsonl",
+                "--out_path=data/test",
+                "--n_gram_min=1",
+                "--n_gram_max=3"
+            ],
+        },
+        {
+            "name": "TEST: Retrieve Tables with Tapas",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/retrieve_tables_with_tapas.py",
+            "console": "integratedTerminal",
+            "args":[
+                "--db_path=/media/martin/Windows/data/feverous_wikiv1.db", 
+                "--output_dir=data/test/",
+                "--model_dir=tapas_models",
+                "--init_checkpoint=tapas_dual_encoder_proj_256_tiny/model.ckpt",
+                "--bert_config_file=tapas_dual_encoder_proj_256_tiny/bert_config.json",
+                "--top_docs_file=data/test/top_10_docs.jsonl",
+            ],
+            "justMyCode": false
+        },
+        {
+            "name": "TEST: Convert Data to Tapas Format",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/convert_test_to_tapas_data.py",
+            "console": "integratedTerminal",
+            "args":[
+                "--db_path=/media/martin/Windows/data/feverous_wikiv1.db", 
+                "--retrieved_tables_file=data/test/top_5_tables.jsonl",
+                "--output_data_file=data/test/tapas_data.jsonl",
+            ],
+        },
+        {
+            "name": "TEST: Create Tapas Tables",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/create_tapas_tables.py",
+            "console": "integratedTerminal",
+            "args":[
+                "--tapas_train_path=data/test/tapas_data.jsonl",
+                "--out_path=data/test/",
+                "--table_out_path=data/test/tables/",
+                "--write_to_files=True",
+                "--is_predict",
+            ],
+        },
+        {
+            "name": "TEST: Create Sentence Entailment Data",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/create_sentence_entailment_data.py",
+            "console": "integratedTerminal",
+            "args":[
+                "--db_path=/media/martin/Windows/data/feverous_wikiv1.db", 
+                "--input_data_file=data/test/top_5_sents.jsonl", 
+                "--output_data_file=data/test/sentence_entailment_data.jsonl",
+                "--is_predict"
+            ],
+        },
+        {
+            "name": "TEST: Merge Table and Sentence Data",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/merge_table_and_sentence_data.py",
+            "console": "integratedTerminal",
+            "args":[
+                "--tapas_csv_file=data/test/tapas_data.csv",
+                "--sentence_data_file=data/test/sentence_entailment_data.jsonl",
+                "--id_label_map_file=data/id_label_map_train.json",
+                "--out_file=data/entailment_train_data.csv",
+            ],
+        },
+        {
+            "name": "TEST: Retrieve Table cells",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/retrieve_table_cells.py",
+            "console": "integratedTerminal",
+            "args":[
+                "--table_csv_path=data/tapas/dev/tables/", 
+                "--eval_csv_path=data/tapas/dev/tapas_data.csv",
+                "--tapas_model_name=google/tapas-tiny",
+                "--model_path=models/tapas_model.pth",
+                "--batch_size=1",
+            ],
+        },
+        {
+            "name": "TEST: Predict Veracity",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/predict_veracity.py",
+            "console": "integratedTerminal",
+            "args":[
+                "--eval_csv_file=data/entailment_eval_data.csv",
+                "--model_file=models/veracity_prediction_model.pth",
+                "--batch_size=16",
+            ],
+        },
+  ]
 }

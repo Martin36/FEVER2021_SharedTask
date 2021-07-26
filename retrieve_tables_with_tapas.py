@@ -3,21 +3,19 @@ import os
 import sys
 import argparse
 import functools
-import enum
 import random
-import numpy as np
 
 from tapas.protos import interaction_pb2
 from tapas.models.bert import modeling
 from tapas.models import table_retriever_model
 from tapas.retrieval import tf_example_utils
 from tapas.experiments import table_retriever_experiment
-from tapas.utils import experiment_utils
 from tapas.scripts import eval_table_retriever_utils
+from tqdm import tqdm
 
 import tensorflow.compat.v1 as tf
 
-from util_funcs import get_tables_from_docs
+from util_funcs import get_tables_from_docs, load_jsonl, store_jsonl
 
 
 DIR_PATH = os.path.abspath(os.getcwd())
@@ -241,32 +239,48 @@ def get_top_k_tables(retrieval_results_file_path, nr_tables_to_retrieve):
     return knn["table_ids"]
 
 
-def retrieve_tables(db, claim, top_docs, nr_tables_to_retrieve, 
+def retrieve_tables(db, data, nr_tables_to_retrieve, 
         output_dir, bert_config_file):
 
-    doc_tables_dict = get_tables_from_docs(db, top_docs)
-
-    interactions = create_interaction_protos(doc_tables_dict)
-    if len(interactions) <= nr_tables_to_retrieve:
-        table_ids = []
-        for doc_name, doc_tables in doc_tables_dict.items():
-            for i in range(len(doc_tables)):
-                table_id = "{}_{}".format(doc_name, i)
-                table_ids.append(table_id)
-        return table_ids
-
-    table_filename, claim_filename = store_tables_and_interactions(claim, 
-        interactions, output_dir)    
     estimator = get_estimator(bert_config_file)
-    claim_output_predict_file = create_claim_representations(estimator, 
-        claim_filename, output_dir)
-    tables_output_predict_file = create_table_representations(estimator, 
-        table_filename, output_dir)
-    retrieval_results_file_path = create_knn(claim_output_predict_file, 
-        tables_output_predict_file, output_dir)
-    table_ids = get_top_k_tables(retrieval_results_file_path, 
-        nr_tables_to_retrieve)
-    return table_ids
+    result = []
+    for d in tqdm(data):
+        claim = d["claim"]
+        top_docs = d["docs"]
+        doc_tables_dict = get_tables_from_docs(db, top_docs)
+
+        interactions = create_interaction_protos(doc_tables_dict)
+        if len(interactions) <= nr_tables_to_retrieve:
+            table_ids = []
+            for doc_name, doc_tables in doc_tables_dict.items():
+                for i in range(len(doc_tables)):
+                    table_id = "{}_{}".format(doc_name, i)
+                    table_ids.append(table_id)
+            res_obj = {
+                "claim": claim,
+                "table_ids": table_ids
+            }
+            result.append(res_obj)
+            continue
+
+        table_filename, claim_filename = store_tables_and_interactions(claim, 
+            interactions, output_dir)    
+        claim_output_predict_file = create_claim_representations(estimator, 
+            claim_filename, output_dir)
+        tables_output_predict_file = create_table_representations(estimator, 
+            table_filename, output_dir)
+        retrieval_results_file_path = create_knn(claim_output_predict_file, 
+            tables_output_predict_file, output_dir)
+        table_ids = get_top_k_tables(retrieval_results_file_path, 
+            nr_tables_to_retrieve)
+        
+        res_obj = {
+            "claim": claim,
+            "table_ids": table_ids
+        }
+        result.append(res_obj)
+    
+    return result
 
 
 def main():
@@ -277,6 +291,7 @@ def main():
     parser.add_argument("--init_checkpoint", default=None, type=str, help="Path to the bert config file")
     parser.add_argument("--model_dir", default=None, type=str, help="Path to the bert config file")
     parser.add_argument("--output_dir", default=None, type=str, help="Path to the output folder for the model")
+    parser.add_argument("--top_docs_file", default=None, type=str, help="Path to the file containing the top docs for each claim")
 
     args = parser.parse_args()
     
@@ -296,6 +311,10 @@ def main():
         raise RuntimeError("Invalid model dir path")
     if not args.output_dir:
         raise RuntimeError("Invalid output dir path")
+    if not args.top_docs_file:
+        raise RuntimeError("Invalid top docs file path")
+    if ".jsonl" not in args.top_docs_file:
+        raise RuntimeError("The top docs file path should include the name of the .jsonl file")
 
     output_dir = os.path.dirname(args.output_dir)
     if not os.path.exists(output_dir):
@@ -303,16 +322,18 @@ def main():
         os.makedirs(output_dir)
 
     db = FeverousDB(args.db_path)
+    data = load_jsonl(args.top_docs_file)
     nr_tables_to_retrieve = 5
+
     claim = "Aramais Yepiskoposyan played for FC Ararat Yerevan, an Armenian football club based in Yerevan during 1986 to 1991."
     top_k_docs = ['2019–20 FC Ararat Yerevan season', 'Spartak Yerevan FC', '2018–19 FC Ararat Yerevan season', 'FC Ararat Yerevan', '2017–18 FC Ararat Yerevan season', 'Aramais Yepiskoposyan', 'Mayor of Yerevan', 'Yerevan', 'FC Yerevan']
     
-    table_ids = retrieve_tables(db, claim, top_k_docs, 
-        nr_tables_to_retrieve, output_dir, args.bert_config_file)
-    
-    print("Retrieved tables: ")
-    print(table_ids)
+    table_objs = retrieve_tables(db, data, nr_tables_to_retrieve,
+        output_dir, args.bert_config_file)
 
+    output_file = output_dir + "/top_{}_tables.jsonl".format(nr_tables_to_retrieve)
+    store_jsonl(table_objs, output_file)
+    print("Stored top tables in '{}'".format(output_file))
 
 
 

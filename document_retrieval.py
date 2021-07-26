@@ -31,6 +31,7 @@ def get_text_related_docs(train_data, doc_id_map, batch_size,
     start_time = time.time()
 
     for batch_nr in range(batches):
+        batch_start_time = time.time()
         print("Processing batch {}/{}".format(batch_nr+1, batches))
 
         start = batch_nr*batch_size
@@ -42,12 +43,12 @@ def get_text_related_docs(train_data, doc_id_map, batch_size,
         
         query_tfidf = tfidf_vectorizer.transform(train_queries)
         cosine_similarities = cosine_similarity(query_tfidf, tfidf_wm)
-        print("Calculating cosine similarity between doc and claim for batch {} took {} seconds".format(batch_nr+1, time.time() - start_time))
+        print("Calculating cosine similarity between doc and claim for batch {} took {} seconds".format(batch_nr+1, time.time() - batch_start_time))
         
         for i in range(cosine_similarities.shape[0]):
             related_docs_indices = cosine_similarities[i].argsort()[:-nr_of_docs-1:-1]
             related_docs.append([doc_id_map[i] for i in related_docs_indices])
-
+        
     print("Total time for consine similarities between docs and claims: {} seconds".format(time.time() - start_time))
     del tfidf_vectorizer, tfidf_wm
     return related_docs
@@ -64,6 +65,7 @@ def get_title_related_docs(train_data, doc_id_map, batch_size, nr_of_docs,
     start_time = time.time()
 
     for batch_nr in range(batches):
+        batch_start_time = time.time()
         print("Processing batch {} of {}".format(batch_nr+1, batches))
 
         start = batch_nr*batch_size
@@ -75,12 +77,12 @@ def get_title_related_docs(train_data, doc_id_map, batch_size, nr_of_docs,
         
         query_tfidf = title_vectorizer.transform(train_queries)
         cosine_similarities = cosine_similarity(query_tfidf, title_wm)
-        print("Calculating cosine similarity for batch {} took {} seconds".format(batch_nr+1, time.time() - start_time))
+        print("Calculating cosine similarity for batch {} took {} seconds".format(batch_nr+1, time.time() - batch_start_time))
         
         for i in range(cosine_similarities.shape[0]):
             related_titles_indices = cosine_similarities[i].argsort()[:-nr_of_docs-1:-1]
             related_titles.append([doc_id_map[i] for i in related_titles_indices])
-
+        
     print("Total time for consine similarities {} seconds".format(time.time() - start_time))
     del title_vectorizer, title_wm
     return related_titles
@@ -106,7 +108,7 @@ def store_top_k_docs(top_k_docs, train_data, path, nr_of_docs):
     with jsonlines.open(file_path, "w") as f:
         for i, d in enumerate(train_data):
             obj = {
-                "id": d["id"],
+                "id": d["id"] if "id" in d else i,
                 "claim": d["claim"],
                 "docs": top_k_docs[i]
             }

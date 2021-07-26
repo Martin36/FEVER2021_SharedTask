@@ -3,11 +3,18 @@ from collections import defaultdict
 import pandas as pd
 import numpy as np
 import os
+import sys
 import shutil
 
 from tqdm import tqdm
 
 from util_funcs import load_jsonl, remove_header_tokens
+
+DIR_PATH = os.path.abspath(os.getcwd())
+
+FEVEROUS_PATH = DIR_PATH + "/FEVEROUS/src"
+sys.path.insert(0, FEVEROUS_PATH)
+
 
 MAX_NUM_COLS = 32
 MAX_NUM_ROWS = 64
@@ -17,24 +24,36 @@ def get_table_id(cell_id):
     cell_id_split = cell_id.split("_")
     return "_".join([cell_id_split[0], cell_id_split[-3]])
 
-def create_tables(tapas_train_data, out_path, table_out_path, write_to_files):
+def create_tables(tapas_train_data, out_path, table_out_path, 
+        write_to_files, is_predict=False):
     counter = 0
     stats = defaultdict(int)
     table_counter = 1
     data_rows = []
-    column_names = ["id", "claim_id", "annotator", "question", "table_file", 
-        "answer_coordinates", "answer_text", "float_answer"]
+
+    if is_predict:
+        column_names = ["id", "claim_id", "question", "table_file",
+             "table_id"]
+    else:
+        column_names = ["id", "claim_id", "annotator", "question", 
+            "table_file", "answer_coordinates", "answer_text", 
+            "float_answer"]
+
     for i, data in enumerate(tqdm(tapas_train_data)):
 
         # Skip data points that doesn't have any tables and contains no evidence
         if not data["has_tables"]:
             stats["has_no_tables"] += 1
             continue
+
         # TODO: Figure out why some samples don't have any evidence
         # It's probably because they have "table_caption" evidence and not "table_cell"
         if len(data["evidence"]) == 0:
             stats["has_no_evidence"] += 1
-            continue
+            # In the prediction phase it is possible to have samples without evidence
+            if not is_predict:
+                continue
+            
         
         coords_answer_map = defaultdict(dict)
 
@@ -102,18 +121,27 @@ def create_tables(tapas_train_data, out_path, table_out_path, write_to_files):
             stats["too_large_tables"] += 1
             continue
 
-        # TODO: How to handle the case with multiple tables?
-        # For now, use the table that has the most table cells from the evidence
-        table_index = max(coords_answer_map, key=lambda x: len(coords_answer_map[x].keys()))
-        answer_coords = list(coords_answer_map[table_index].keys())
-        
-        assert table_index is not None and answer_coords is not None
 
-        answer_texts = [coords_answer_map[table_index][coords] for coords in answer_coords]
-        data_row = [i, data["id"], None, data["claim"], table_file_names[table_index],
-             answer_coords, answer_texts, np.nan]
-        data_rows.append(data_row)
-        counter += 1
+        if is_predict:
+            # ["id", "claim_id", "question", "table_file", "table_id"]
+            for table_id in table_file_names:
+                data_row = [i, data["id"], data["claim"], 
+                    table_file_names[table_id], table_id]
+                data_rows.append(data_row)
+                counter += 1
+        else:
+            # TODO: How to handle the case with multiple tables?
+            # For now, use the table that has the most table cells from the evidence
+            table_index = max(coords_answer_map, key=lambda x: len(coords_answer_map[x].keys()))
+            answer_coords = list(coords_answer_map[table_index].keys())
+            
+            assert table_index is not None and answer_coords is not None
+
+            answer_texts = [coords_answer_map[table_index][coords] for coords in answer_coords]
+            data_row = [i, data["id"], None, data["claim"], table_file_names[table_index],
+                answer_coords, answer_texts, np.nan]
+            data_rows.append(data_row)
+            counter += 1
 
     print("{} valid train samples out of {}".format(len(data_rows), len(tapas_train_data)))
     print("{} samples have no tables".format(stats["has_no_tables"]))
@@ -123,8 +151,12 @@ def create_tables(tapas_train_data, out_path, table_out_path, write_to_files):
     
     df = pd.DataFrame(data_rows, columns=column_names)
     
+    result_file = out_path + "tapas_data.csv"
     if write_to_files:
-        df.to_csv(out_path + "tapas_data.csv")
+        df.to_csv(result_file)
+
+    return result_file
+
 
 
 def main():
@@ -133,6 +165,7 @@ def main():
     parser.add_argument("--out_path", default=None, type=str, help="Path to the output folder, where the top k documents should be stored")
     parser.add_argument("--table_out_path", default=None, type=str, help="Path to the output folder, where the top k documents should be stored")
     parser.add_argument("--write_to_files", default=False, type=bool, help="Should the tables be written to files?")
+    parser.add_argument("--is_predict", default=False, action="store_true", help="Tells the script if it should use table content when matching")
 
     args = parser.parse_args()
 
@@ -166,7 +199,8 @@ def main():
     tapas_train_data = load_jsonl(args.tapas_train_path)
 
     print("Creating tapas tables on the SQA format...")
-    create_tables(tapas_train_data, args.out_path, args.table_out_path, args.write_to_files)
+    create_tables(tapas_train_data, args.out_path, args.table_out_path,
+        args.write_to_files, is_predict=args.is_predict)
     print("Finished creating tapas tables")
 
 
