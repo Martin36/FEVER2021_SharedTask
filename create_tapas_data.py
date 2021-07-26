@@ -6,7 +6,7 @@ import jsonlines
 
 from tqdm import tqdm
 
-from util_funcs import replace_entities, load_jsonl, remove_header_tokens
+from util_funcs import replace_entities, load_jsonl, create_table_dict
 
 DIR_PATH = os.path.abspath(os.getcwd())
 
@@ -16,27 +16,6 @@ sys.path.insert(0, FEVEROUS_PATH)
 from database.feverous_db import FeverousDB
 from utils.wiki_page import WikiPage
 
-
-def create_table_dict(table):
-
-    table_rows = table.get_rows()
-    rows = [replace_entities(table_row.cell_content) 
-        for table_row in table_rows]
-    col_names = rows[0]
-    rows = rows[1:]
-
-    table_dict = {}
-    table_dict['header'] = [name.strip() for name in col_names]
-    table_dict['cell_ids'] = table.get_ids()
-    table_dict['rows'] = rows
-    table_dict['page'] = table.page
-
-    # Keep only rows that have the same nr of columns as the header
-    # This is probably not needed, but since it works now, this stays so nothing breaks
-    # TODO: Figure out if this is really needed
-    table_dict['rows'] = [row for row in table_dict['rows'] if len(row) == len(table_dict['header'])]
-    
-    return table_dict
 
 def get_answer_texts(db, data):
     evidence_list = data['evidence'][0]['content']

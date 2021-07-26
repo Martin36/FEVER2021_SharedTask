@@ -425,21 +425,6 @@
             "justMyCode": false
         },
         {
-            "name": "FEVER: Run End 2 End",
-            "type": "python",
-            "request": "launch",
-            "program": "${workspaceFolder}/run_e2e.py",
-            "console": "integratedTerminal",
-            "args":[
-                "--db_path=/media/martin/Windows/data/feverous_wikiv1.db", 
-                "--doc_id_map_path=tfidf/doc_id_map.json", 
-                "--vectorizer_path=tfidf/vectorizer-stemmed-32bit.pickle",
-                "--wm_path=tfidf/tfidf_wm-stemmed-32bit.pickle",
-                "--title_vectorizer_path=tfidf/title_vectorizer-32bit.pickle",
-                "--title_wm_path=tfidf/title_tfidf_wm-32bit.pickle",
-            ],
-        },
-        {
             "name": "FEVER: Create ID Label Map (Train)",
             "type": "python",
             "request": "launch",
@@ -520,12 +505,28 @@
             "program": "${workspaceFolder}/retrieve_tables_with_tapas.py",
             "console": "integratedTerminal",
             "args":[
-                "--output_dir=data/tapas/tf_records/nq/sample/e2e",
+                "--db_path=/media/martin/Windows/data/feverous_wikiv1.db", 
+                "--output_dir=data/table_retrieval/",
                 "--model_dir=tapas_models/nq_e2e",
                 "--init_checkpoint=tapas_dual_encoder_proj_256_tiny/model.ckpt",
                 "--bert_config_file=tapas_dual_encoder_proj_256_tiny/bert_config.json",
             ],
             "justMyCode": false
+        },
+        {
+            "name": "FEVER: Run End 2 End",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/run_e2e.py",
+            "console": "integratedTerminal",
+            "args":[
+                "--db_path=/media/martin/Windows/data/feverous_wikiv1.db", 
+                "--doc_id_map_path=tfidf/doc_id_map.json", 
+                "--vectorizer_path=tfidf/vectorizer-stemmed-32bit.pickle",
+                "--wm_path=tfidf/tfidf_wm-stemmed-32bit.pickle",
+                "--title_vectorizer_path=tfidf/title_vectorizer-32bit.pickle",
+                "--title_wm_path=tfidf/title_tfidf_wm-32bit.pickle",
+            ],
         },
     ]
 }

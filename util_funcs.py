@@ -21,11 +21,50 @@ from utils.wiki_page import WikiPage
 porter_stemmer = PorterStemmer()
 s_words = set(stopwords.words('english'))
 
+
+def create_table_dict(table):
+
+    table_rows = table.get_rows()
+    rows = [replace_entities(table_row.cell_content) 
+        for table_row in table_rows]
+    col_names = rows[0]
+    rows = rows[1:]
+
+    table_dict = {}
+    table_dict['header'] = [name.strip() for name in col_names]
+    table_dict['cell_ids'] = table.get_ids()
+    table_dict['rows'] = rows
+    table_dict['page'] = table.page
+
+    # Keep only rows that have the same nr of columns as the header
+    # This is probably not needed, but since it works now, this stays so nothing breaks
+    # TODO: Figure out if this is really needed
+    table_dict['rows'] = [row for row in table_dict['rows'] if len(row) == len(table_dict['header'])]
+    
+    return table_dict
+
+
+
 def extract_sents(doc_json):
     page = WikiPage(doc_json['title'], doc_json)
     sents = [replace_entities(sent.content) for sent in page.get_sentences()]
     sents = [sent.lower() for sent in sents]
     return sents
+
+def get_tables_from_docs(db: FeverousDB, doc_names: "list[str]"):
+    """ 
+        Takes a list of document names and returns a dict with 
+        a list of tables for each document
+    """
+    result = {}
+    for doc_name in doc_names:
+        doc_json = db.get_doc_json(doc_name)
+        page = WikiPage(doc_name, doc_json)
+        tables = page.get_tables()
+        table_dicts = [create_table_dict(table) for table in tables]
+        result[doc_name] = table_dicts
+    return result
+
 
 def load_json(path: str):
     data = None
