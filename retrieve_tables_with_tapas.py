@@ -324,9 +324,6 @@ def main():
     db = FeverousDB(args.db_path)
     data = load_jsonl(args.top_docs_file)
     nr_tables_to_retrieve = 5
-
-    claim = "Aramais Yepiskoposyan played for FC Ararat Yerevan, an Armenian football club based in Yerevan during 1986 to 1991."
-    top_k_docs = ['2019–20 FC Ararat Yerevan season', 'Spartak Yerevan FC', '2018–19 FC Ararat Yerevan season', 'FC Ararat Yerevan', '2017–18 FC Ararat Yerevan season', 'Aramais Yepiskoposyan', 'Mayor of Yerevan', 'Yerevan', 'FC Yerevan']
     
     table_objs = retrieve_tables(db, data, nr_tables_to_retrieve,
         output_dir, args.bert_config_file)

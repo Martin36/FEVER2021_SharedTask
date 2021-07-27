@@ -1,8 +1,7 @@
 import argparse
 import pandas as pd
-import numpy as np
 
-from util_funcs import load_json, load_jsonl
+from util_funcs import load_jsonl
 
 
 def main():
@@ -32,15 +31,6 @@ def main():
     sentence_data = load_jsonl(args.sentence_data_file)
 
     sent_data_table = pd.DataFrame(sentence_data)
-
-    # claim_id_label_map = load_json(args.id_label_map_file)
-    # claim_id_label_map = {
-    #     "claim_id": list(claim_id_label_map.keys()),
-    #     "label": list(claim_id_label_map.values())
-    # }
-
-    # claim_id_label_map_table = pd.DataFrame(claim_id_label_map)
-    # claim_id_label_map_table["claim_id"] = claim_id_label_map_table["claim_id"].astype(int)
     
     merged_data = pd.merge(tapas_data, sent_data_table, how="outer", on=["claim"])
     merged_data = merged_data.drop(["Unnamed: 0"], axis=1)
@@ -57,27 +47,11 @@ def main():
     merged_data = merged_data.drop_duplicates(subset=["claim"])
     print("Length of merged data, after 'claim' duplicates removed: {}".format(len(merged_data)))
 
-    # Merge claim columns
-    # merged_data["claim"] = merged_data["claim_x"]
-    # merged_data.loc[merged_data["claim_x"].isnull(), "claim"] = merged_data["claim_y"]
-    # merged_data = merged_data.drop(["claim_x", "claim_y"], axis=1)
-
     # Remove all rows that doesn't have any claim value
     merged_data.dropna(subset=["claim"], inplace=True)
     print("Length of merged data, after claim merge and nan removal: {}".format(len(merged_data)))
 
-    # Fill empty answer_coordinate and answer_text cells
-    # A bit hacky solution from: https://stackoverflow.com/questions/33199193/how-to-fill-dataframe-nan-values-with-empty-list-in-pandas
-    # TODO: Maybe this column needs to be added
-    # merged_data["answer_coordinates"] = np.nan
-    # merged_data["answer_text"] = np.nan
-    # isnull = merged_data["answer_coordinates"].isnull()
-    # merged_data.loc[isnull, "answer_coordinates"] = [ [[]] * isnull.sum() ]
-    # merged_data.loc[isnull, "answer_text"] = [ [[]] * isnull.sum() ]
-
     assert not merged_data["claim"].isnull().values.any()
-    # assert not merged_data["answer_coordinates"].isnull().values.any()
-    # assert not merged_data["answer_text"].isnull().values.any()
 
     nan_claims = merged_data["claim"].isnull().sum()
     print("Nr of nan claims: {}".format(nan_claims))
