@@ -10,10 +10,6 @@ from tqdm import tqdm
 
 from util_funcs import load_jsonl, remove_header_tokens
 
-DIR_PATH = os.path.abspath(os.getcwd())
-
-FEVEROUS_PATH = DIR_PATH + "/FEVEROUS/src"
-sys.path.insert(0, FEVEROUS_PATH)
 
 
 MAX_NUM_COLS = 32
@@ -67,6 +63,7 @@ def create_tables(tapas_train_data, out_path, table_out_path,
 
         table_file_names = {}
         has_too_large_tables = False
+        evidence_id_out_of_range = False
         for d in data["table_dicts"]:
             if len(d["header"]) > MAX_NUM_COLS or \
                len(d["rows"])+len(d["header"]) > MAX_NUM_ROWS or \

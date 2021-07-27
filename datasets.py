@@ -78,20 +78,21 @@ class PredictionDataset(torch.utils.data.Dataset):
         try:
             tapas_input = self.tapas_tokenizer(table=table,
                                     queries=item.claim,
-                                    answer_coordinates=item.answer_coordinates,
-                                    answer_text=item.answer_text,
+                                    # TODO: The next two lines could possibly be removed, since the values they produced later anyways
+                                    # answer_coordinates=item.answer_coordinates,
+                                    # answer_text=item.answer_text,
                                     truncation=True,
                                     padding="max_length",
                                     return_tensors="pt"
             )
             # remove the batch dimension which the tokenizer adds by default
             tapas_input = {key: val.squeeze(0) for key, val in tapas_input.items()}
-            if torch.gt(tapas_input["numeric_values"], 1e+20).any():
-                return None
+            # if torch.gt(tapas_input["numeric_values"], 1e+20).any():
+            #     return None
 
-            del tapas_input["labels"]
-            del tapas_input["numeric_values"]
-            del tapas_input["numeric_values_scale"]
+            # del tapas_input["labels"]
+            # del tapas_input["numeric_values"]
+            # del tapas_input["numeric_values_scale"]
 
             if item.evidence:
                 input_str = "{} </s> {}".format(item.claim, item.evidence)
@@ -108,7 +109,8 @@ class PredictionDataset(torch.utils.data.Dataset):
             output = {
                 "tapas_input": tapas_input,
                 "roberta_input": roberta_input,
-                "label": label_to_id_map[item.label]
+                # "label": label_to_id_map[item.label] if item.label else "",
+                "claim": item.claim
             }
             return output
         

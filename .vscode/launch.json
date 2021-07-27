@@ -637,13 +637,12 @@
             "name": "TEST: Merge Table and Sentence Data",
             "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/merge_table_and_sentence_data.py",
+            "program": "${workspaceFolder}/merge_table_and_sentence_data_test_set.py",
             "console": "integratedTerminal",
             "args":[
                 "--tapas_csv_file=data/test/tapas_data.csv",
                 "--sentence_data_file=data/test/sentence_entailment_data.jsonl",
-                "--id_label_map_file=data/id_label_map_train.json",
-                "--out_file=data/entailment_train_data.csv",
+                "--out_file=data/test/entailment_data.csv",
             ],
         },
         {
@@ -653,11 +652,12 @@
             "program": "${workspaceFolder}/retrieve_table_cells.py",
             "console": "integratedTerminal",
             "args":[
-                "--table_csv_path=data/tapas/dev/tables/", 
-                "--eval_csv_path=data/tapas/dev/tapas_data.csv",
-                "--tapas_model_name=google/tapas-tiny",
-                "--model_path=models/tapas_model.pth",
-                "--batch_size=1",
+                "--db_path=/media/martin/Windows/data/feverous_wikiv1.db", 
+                "--data_file=data/test/top_5_tables.jsonl",
+                "--model_file=models/tapas_model.pth",
+                "--batch_size=64",
+                "--out_dir=data/test/",
+                "--out_file=data/test/top_table_cells.jsonl",
             ],
         },
         {
@@ -667,10 +667,35 @@
             "program": "${workspaceFolder}/predict_veracity.py",
             "console": "integratedTerminal",
             "args":[
-                "--eval_csv_file=data/entailment_eval_data.csv",
+                "--in_file=data/test/entailment_data.csv",
                 "--model_file=models/veracity_prediction_model.pth",
                 "--batch_size=16",
+                "--out_file=data/test/veracity_predictions.jsonl",
             ],
         },
-  ]
+        {
+            "name": "TEST: Create final results",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/create_final_results.py",
+            "console": "integratedTerminal",
+            "args":[
+                "--test_data_file=train_data/feverous_test_unlabeled.jsonl",
+                "--veracity_predictions_file=data/test/veracity_predictions.jsonl",
+                "--sentence_evidence_file=data/test/top_5_sents.jsonl",
+                "--table_evidence_file=data/test/top_table_cells.jsonl",
+                "--out_file=data/test/final_output.jsonl",
+            ],
+        },
+        {
+            "name": "TEST: Evaluate Results",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/evaluate_final_results.py",
+            "console": "integratedTerminal",
+            "args":[
+                "--input_path=data/test/final_output.jsonl",
+            ],
+        },
+    ]
 }
