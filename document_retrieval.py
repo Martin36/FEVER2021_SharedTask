@@ -23,6 +23,7 @@ def load_tfidf(vectorizer_path, wm_path):
 def get_text_related_docs(train_data, doc_id_map, batch_size, 
         nr_of_docs, vectorizer_path, wm_path):
     tfidf_vectorizer, tfidf_wm = load_tfidf(vectorizer_path, wm_path)
+    print("Text TF-IDF shape: {}".format(tfidf_wm.shape))
     nr_of_queries = len(train_data)
     batches = math.ceil(nr_of_queries / batch_size)
 

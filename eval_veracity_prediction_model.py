@@ -1,6 +1,7 @@
 import argparse
 import ast
 import time
+from util_funcs import store_json
 import torch
 import torch.nn as nn
 import pandas as pd
@@ -71,30 +72,31 @@ def eval_model(veracity_model, roberta_model, tapas_model,
     accuracy = nr_correct / size
     print("Accuracy for the veracity model: {}".format(accuracy)) 
 
-
-def store_model(model, out_path: str):
-    file_name = "veracity_prediction_model.pth"
-    torch.save(model, out_path + file_name)
-    print("Saved prediction model to file '{}'".format(out_path + file_name))
+    return accuracy
 
 
 def main():
     parser = argparse.ArgumentParser(description="Trains the veracity prediction model")
-    parser.add_argument("--eval_csv_file", default=None, type=str, help="Path to the csv file containing the evaluation examples")
+    parser.add_argument("--csv_file", default=None, type=str, help="Path to the csv file containing the evaluation examples")
     parser.add_argument("--model_file", default=None, type=str, help="Path to the trained veracity prediction model")
     parser.add_argument("--tapas_model_name", default='google/tapas-tiny', type=str, help="Name of the pretrained tapas model")
     parser.add_argument("--batch_size", default=1, type=int, help="The size of each training batch. Reduce this is you run out of memory")
+    parser.add_argument("--out_file", default=None, type=str, help="Path to the output file")
 
     args = parser.parse_args()
 
-    if not args.eval_csv_file:
+    if not args.csv_file:
         raise RuntimeError("Invalid eval csv path")
-    if ".csv" not in args.eval_csv_file:
+    if ".csv" not in args.csv_file:
         raise RuntimeError("The train csv path should include the name of the .csv file")
     if not args.model_file:
         raise RuntimeError("Invalid model path")
     if ".pth" not in args.model_file:
         raise RuntimeError("The model path should include the name of the .pth file")
+    if not args.out_file:
+        raise RuntimeError("Invalid output file path")
+    if ".json" not in args.out_file:
+        raise RuntimeError("The output file path should include the name of the .json file")
 
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
@@ -118,8 +120,16 @@ def main():
     dataloader = torch.utils.data.DataLoader(dataset, shuffle=True, 
         batch_size=args.batch_size, drop_last=True, collate_fn=collate_fn)
 
-    eval_model(veracity_model, roberta_model, 
+    accuracy = eval_model(veracity_model, roberta_model, 
         tapas_model, dataloader, device)
+
+    result = {
+        "accuracy": accuracy
+    }
+
+    store_json(result, args.out_file)
+
+    
 
 
 

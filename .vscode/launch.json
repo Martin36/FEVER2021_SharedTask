@@ -48,7 +48,7 @@
             ],
         },
         {
-            "name": "FEVER: Retrieve documents",
+            "name": "FEVER: Retrieve documents (Train set)",
             "type": "python",
             "request": "launch",
             "program": "${workspaceFolder}/document_retrieval.py",
@@ -61,6 +61,22 @@
                 "--title_vectorizer_path=tfidf/title_vectorizer-32bit.pickle",
                 "--title_wm_path=tfidf/title_tfidf_wm-32bit.pickle",
                 "--out_path=data/document_retrieval"
+            ],
+        },
+        {
+            "name": "FEVER: Retrieve documents (Dev set)",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/document_retrieval.py",
+            "console": "integratedTerminal",
+            "args":[
+                "--doc_id_map_path=tfidf/doc_id_map.json", 
+                "--train_data_path=train_data/dev.jsonl", 
+                "--vectorizer_path=tfidf/vectorizer-stemmed-32bit.pickle",
+                "--wm_path=tfidf/tfidf_wm-stemmed-32bit.pickle",
+                "--title_vectorizer_path=tfidf/title_vectorizer-32bit.pickle",
+                "--title_wm_path=tfidf/title_tfidf_wm-32bit.pickle",
+                "--out_path=data/dev"
             ],
         },
         {
@@ -495,40 +511,68 @@
                 "--eval_csv_file=data/entailment_eval_data.csv",
                 "--model_file=models/veracity_prediction_model.pth",
                 "--batch_size=16",
+                "--out_file=data/dev/veracity_prediction_accuracy.json"
             ],
             "justMyCode": false
         },
         {
-            "name": "FEVER: Retrieve Tables with Tapas",
+            "name": "FEVER: Retrieve Tables with Tapas (Dev)",
             "type": "python",
             "request": "launch",
             "program": "${workspaceFolder}/retrieve_tables_with_tapas.py",
             "console": "integratedTerminal",
             "args":[
                 "--db_path=/media/martin/Windows/data/feverous_wikiv1.db", 
-                "--output_dir=data/table_retrieval/",
-                "--model_dir=tapas_models/nq_e2e",
+                "--output_dir=data/dev/",
+                "--model_dir=tapas_models",
                 "--init_checkpoint=tapas_dual_encoder_proj_256_tiny/model.ckpt",
                 "--bert_config_file=tapas_dual_encoder_proj_256_tiny/bert_config.json",
+                "--top_docs_file=data/dev/top_10_docs.jsonl",
             ],
             "justMyCode": false
         },
         {
-            "name": "FEVER: Retrieve Table cells",
+            "name": "FEVER: Retrieve Table cells (Dev)",
             "type": "python",
             "request": "launch",
             "program": "${workspaceFolder}/retrieve_table_cells.py",
             "console": "integratedTerminal",
             "args":[
-                "--table_csv_path=data/tapas/dev/tables/", 
-                "--eval_csv_path=data/tapas/dev/tapas_data.csv",
-                "--tapas_model_name=google/tapas-tiny",
-                "--model_path=models/tapas_model.pth",
-                "--batch_size=1",
+                "--db_path=/media/martin/Windows/data/feverous_wikiv1.db", 
+                "--data_file=data/test/top_5_tables.jsonl",
+                "--model_file=models/tapas_model.pth",
+                "--batch_size=64",
+                "--out_dir=data/test/",
+                "--out_file=data/test/top_table_cells.jsonl",
             ],
-            "justMyCode": false
         },
-
+        {
+            "name": "FEVER: Retrieve Table cells (Test)",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/retrieve_table_cells.py",
+            "console": "integratedTerminal",
+            "args":[
+                "--db_path=/media/martin/Windows/data/feverous_wikiv1.db", 
+                "--data_file=data/test/top_5_tables.jsonl",
+                "--model_file=models/tapas_model.pth",
+                "--batch_size=64",
+                "--out_dir=data/test/",
+                "--out_file=data/test/top_table_cells.jsonl",
+            ],
+        },
+        {
+            "name": "FEVER: Eval Table Cell Retriever (Dev)",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/eval_table_cell_retriever.py",
+            "console": "integratedTerminal",
+            "args":[
+                "--retrieved_cells_file=data/dev/top_table_cells.jsonl",
+                "--data_file=train_data/dev.jsonl",
+                "--out_file=data/dev/table_retriever_eval.json",
+            ],
+        },
         {
             "name": "FEVER: Run End 2 End",
             "type": "python",

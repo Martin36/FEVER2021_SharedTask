@@ -82,6 +82,14 @@ def load_jsonl(path: str):
             result.append(doc)
     return result
 
+def store_json(data, file_path):
+    if type(data) != dict:
+        raise ArgumentTypeError("'data' needs to be a dict")
+    if ".json" not in file_path:
+        raise ArgumentError("'file_path' needs to include the name of the output file")
+    with open(file_path, mode='w') as f:
+        f.write(json.dumps(data))
+
 def store_jsonl(data, file_path):
     if type(data) != list:
         raise ArgumentTypeError("'data' needs to be a list")

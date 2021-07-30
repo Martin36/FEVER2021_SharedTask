@@ -1,6 +1,6 @@
 [submodule "FEVEROUS"]
 	path = FEVEROUS
-	url = git@github.com:Raldir/FEVEROUS.git
+	url = git@github.com/Martin36/FEVEROUS.git
 [submodule "tapas"]
 	path = tapas
 	url = git@github.com:Martin36/tapas.git
