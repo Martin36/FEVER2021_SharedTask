@@ -539,11 +539,11 @@
             "console": "integratedTerminal",
             "args":[
                 "--db_path=/media/martin/Windows/data/feverous_wikiv1.db", 
-                "--data_file=data/test/top_5_tables.jsonl",
+                "--data_file=data/dev/top_5_tables.jsonl",
                 "--model_file=models/tapas_model.pth",
                 "--batch_size=64",
-                "--out_dir=data/test/",
-                "--out_file=data/test/top_table_cells.jsonl",
+                "--out_dir=data/dev/",
+                "--out_file=data/dev/top_table_cells.jsonl",
             ],
         },
         {

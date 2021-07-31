@@ -12,7 +12,7 @@ from transformers import RobertaTokenizerFast, RobertaModel, TapasTokenizer, Tap
 from torch.utils.data import DataLoader
 
 from datasets import PredictionDataset, collate_fn
-from prediction_network import PredictionNetwork
+from prediction_network import PredictionNetwork    # Needed for the import of the model
 
 stats = defaultdict(int)
 
@@ -20,7 +20,7 @@ VERBOSE = False
 
 
 def eval_model(veracity_model, roberta_model, tapas_model, 
-    dataloader: DataLoader, device):
+    dataloader: DataLoader):
     loss_fn = nn.CrossEntropyLoss()
 
     size = len(dataloader.dataset)
@@ -98,8 +98,6 @@ def main():
     if ".json" not in args.out_file:
         raise RuntimeError("The output file path should include the name of the .json file")
 
-    device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
-
     entailment_data = pd.read_csv(args.eval_csv_file, converters={
         "answer_coordinates": ast.literal_eval,
         "answer_text": ast.literal_eval
@@ -121,7 +119,7 @@ def main():
         batch_size=args.batch_size, drop_last=True, collate_fn=collate_fn)
 
     accuracy = eval_model(veracity_model, roberta_model, 
-        tapas_model, dataloader, device)
+        tapas_model, dataloader)
 
     result = {
         "accuracy": accuracy

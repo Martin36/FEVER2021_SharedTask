@@ -8,9 +8,13 @@ def evaluate(data, retrieved_cells):
     sum_precision = 0
     sum_recall = 0
     claims_with_table_evidence = 0
-    for i in range(len(data)):
-        evidence = data[i]["evidence"][0]["content"]
-        if len(data[i]["evidence"]) > 1:
+    print("Data len: {}".format(len(data)))
+    print("Retrieved cells len: {}".format(len(retrieved_cells)))
+
+    for d in data:
+        claim = d["claim"]
+        evidence = d["evidence"][0]["content"]
+        if len(d["evidence"]) > 1:
             stats["samples_with_multiple_evidence"] += 1
 
         evidence = [table for table in evidence if "_cell_" in table]
@@ -18,14 +22,29 @@ def evaluate(data, retrieved_cells):
             # The sample could in fact have table evidence in some other
             # evidence obj
             stats["samples_without_table_evidence"] += 1
+        else:
+            claims_with_table_evidence += 1
+
+        rel_cells_objs = [obj for obj in retrieved_cells if obj["claim"] == claim]
+
+        if len(rel_cells_objs) == 0:
+            stats["samples_without_retrieved_cells"] += 1
+            if len(evidence) == 0:
+                # If there are no cells in the evidence, the model has
+                # done a correct choice, otherwise not
+                precision = 100
+                recall = 100
+            else:
+                precision = 100
+                recall = 0
+            sum_precision += precision
+            sum_recall += recall
             continue
 
-        claims_with_table_evidence += 1
-        rel_cells_obj = retrieved_cells[i]
+        rel_cells_obj = rel_cells_objs[0]
         rel_cells = rel_cells_obj["cell_ids"]
 
-        assert rel_cells["id"] == data[i]["id"]   # Make sure that the arrays are in the same order
-        assert rel_cells["claim"] == data[i]["claim"]
+        assert rel_cells_obj["claim"] == claim
 
         nr_of_correct_cells = 0
         for cell in evidence:
@@ -33,25 +52,36 @@ def evaluate(data, retrieved_cells):
                 if cell == rel_cell:
                     nr_of_correct_cells += 1
         
-        precision = (nr_of_correct_cells/len(rel_cells))*100
-        recall = (nr_of_correct_cells/len(evidence))*100
+        if len(rel_cells) == 0:
+            precision = 100
+        else:
+            precision = (nr_of_correct_cells/len(rel_cells))*100
+        if len(evidence) == 0:
+            recall = 100
+        else:
+            recall = (nr_of_correct_cells/len(evidence))*100
+
         sum_precision += precision
         sum_recall += recall
-        
+
 
     precision_tables_only = sum_precision/claims_with_table_evidence
     recall_tables_only = sum_recall/claims_with_table_evidence
+    f1_tables_only = 2*((precision_tables_only*recall_tables_only)/(precision_tables_only+recall_tables_only))
     precision_all = sum_precision/len(data)
     recall_all = sum_recall/len(data)
-
+    f1_all = 2*((precision_all*recall_all)/(precision_all+recall_all))
+    
     print("Samples with multiple evidence: {}".format(stats["samples_with_multiple_evidence"]))
     print("Samples without table evidence: {}".format(stats["samples_without_table_evidence"]))
 
     result_dict = {
         "precision_tables_only": precision_tables_only,
         "recall_tables_only": recall_tables_only,
+        "f1_tables_only": f1_tables_only,
         "precision_all": precision_all,
-        "recall_all": recall_all
+        "recall_all": recall_all,
+        "f1_all": f1_all
     }
 
     return result_dict
@@ -79,7 +109,7 @@ def main():
         raise RuntimeError("The out file path should include the name of the .json file")
 
     retrieved_cells = load_jsonl(args.retrieved_cells_file)
-    data = load_jsonl(args.data_file)
+    data = load_jsonl(args.data_file)[1:]
 
     result = evaluate(data, retrieved_cells)
 

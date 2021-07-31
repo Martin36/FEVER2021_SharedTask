@@ -18,7 +18,7 @@ sys.path.insert(0, FEVEROUS_PATH)
 from database.feverous_db import FeverousDB
 from utils.wiki_page import WikiPage
 
-
+stats = defaultdict(int)
 
 def predict(model, tokenizer, data_path, device):
 
@@ -39,9 +39,12 @@ def predict(model, tokenizer, data_path, device):
                 )
                 batch = {key: val for key, val in batch.items()}
                 if torch.gt(batch["numeric_values"], 1e+20).any():
+                    stats["tables_with_too_large_numbers"] += 1
                     continue
                 batch["float_answer"] = torch.tensor(0.0)
             except:
+                e = sys.exc_info()[0]
+                stats["tokenizing_errors"] += 1
                 continue
 
             input_ids = batch["input_ids"].to(device)
@@ -72,8 +75,12 @@ def predict(model, tokenizer, data_path, device):
             # Keep only the top 5 cells, 
             # assuming that they are ordered by score
             for output_cell in output_cells[:6]:
-                cell_id = "{}_{}_{}".format(item.table_id, output_cell[0], 
-                    output_cell[1])
+                table_id_split = item.table_id.split("_")
+                page_name = table_id_split[0]
+                table_id = table_id_split[1]
+                # Example format: 'Algebraic logic_cell_0_9_1'
+                cell_id = "{}_cell_{}_{}_{}".format(page_name, table_id, 
+                    output_cell[0], output_cell[1])
                 claim_to_cell_id_map[item.question].append(cell_id)
 
     return claim_to_cell_id_map
