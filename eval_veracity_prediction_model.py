@@ -11,7 +11,7 @@ from tqdm import tqdm
 from transformers import RobertaTokenizerFast, RobertaModel, TapasTokenizer, TapasModel
 from torch.utils.data import DataLoader
 
-from datasets import PredictionDataset, collate_fn
+from datasets import PredictionDataset, collate_fn, id_to_label_map
 from prediction_network import PredictionNetwork    # Needed for the import of the model
 
 stats = defaultdict(int)
@@ -26,8 +26,7 @@ def eval_model(veracity_model, roberta_model, tapas_model,
     size = len(dataloader.dataset)
     nr_correct = 0
     for idx, batch in enumerate(tqdm(dataloader)):
-        
-        
+
         start_time = time.time()
         roberta_input = batch["roberta_input"]
         roberta_output = roberta_model(**roberta_input)
@@ -50,7 +49,10 @@ def eval_model(veracity_model, roberta_model, tapas_model,
         roberta_last_hidden_state = torch.flatten(roberta_last_hidden_state, start_dim=1, end_dim=2)
         tapas_last_hidden_state = torch.flatten(tapas_last_hidden_state, start_dim=1, end_dim=2)
         X = torch.cat((tapas_last_hidden_state, roberta_last_hidden_state), dim=1)#.to(device)
-        correct_label = batch["label"]#.to(device)
+        correct_label = batch["label"]
+        
+        for label in correct_label:
+            stats["actual_{}".format(id_to_label_map[label.item()])] += 1
 
         start_time = time.time()
         pred = veracity_model(X)
@@ -65,6 +67,9 @@ def eval_model(veracity_model, roberta_model, tapas_model,
         pred_labels = torch.argmax(pred, dim=1)
         nr_correct += torch.sum(pred_labels == correct_label)
 
+        for label in pred_labels:
+            stats["predicted_{}".format(id_to_label_map[label.item()])] += 1
+
         if idx % 10 == 0:
             loss, current = loss.item(), idx * len(X)
             print(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
@@ -72,11 +77,23 @@ def eval_model(veracity_model, roberta_model, tapas_model,
     accuracy = nr_correct / size
     print("Accuracy for the veracity model: {}".format(accuracy)) 
 
-    return accuracy
+    result = {
+        "accuracy": accuracy.item(),
+    }
+    labels = [
+        "SUPPORTS",
+        "REFUTES",
+        "NOT ENOUGH INFO"
+    ]
+    for label in labels:
+        result["actual_{}".format(label)] = stats["actual_{}".format(label)]
+        result["predicted_{}".format(label)] = stats["predicted_{}".format(label)]
+
+    return result
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Trains the veracity prediction model")
+    parser = argparse.ArgumentParser(description="Evaluates the veracity prediction model")
     parser.add_argument("--csv_file", default=None, type=str, help="Path to the csv file containing the evaluation examples")
     parser.add_argument("--model_file", default=None, type=str, help="Path to the trained veracity prediction model")
     parser.add_argument("--tapas_model_name", default='google/tapas-tiny', type=str, help="Name of the pretrained tapas model")
@@ -98,7 +115,7 @@ def main():
     if ".json" not in args.out_file:
         raise RuntimeError("The output file path should include the name of the .json file")
 
-    entailment_data = pd.read_csv(args.eval_csv_file, converters={
+    entailment_data = pd.read_csv(args.csv_file, converters={
         "answer_coordinates": ast.literal_eval,
         "answer_text": ast.literal_eval
     })
@@ -118,14 +135,11 @@ def main():
     dataloader = torch.utils.data.DataLoader(dataset, shuffle=True, 
         batch_size=args.batch_size, drop_last=True, collate_fn=collate_fn)
 
-    accuracy = eval_model(veracity_model, roberta_model, 
+    result = eval_model(veracity_model, roberta_model, 
         tapas_model, dataloader)
 
-    result = {
-        "accuracy": accuracy
-    }
-
     store_json(result, args.out_file)
+    print("Stored accuracy for veracity prediction model in '{}'".format(args.out_file))
 
     
 

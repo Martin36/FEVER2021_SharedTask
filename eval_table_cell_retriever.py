@@ -1,6 +1,7 @@
 from collections import defaultdict
 from util_funcs import load_jsonl, store_json
 import argparse
+from tqdm import tqdm
 
 stats = defaultdict(int)
 
@@ -8,10 +9,13 @@ def evaluate(data, retrieved_cells):
     sum_precision = 0
     sum_recall = 0
     claims_with_table_evidence = 0
+    sum_precision_tables_only = 0
+    sum_recall_tables_only = 0
+
     print("Data len: {}".format(len(data)))
     print("Retrieved cells len: {}".format(len(retrieved_cells)))
 
-    for d in data:
+    for d in tqdm(data):
         claim = d["claim"]
         evidence = d["evidence"][0]["content"]
         if len(d["evidence"]) > 1:
@@ -64,9 +68,13 @@ def evaluate(data, retrieved_cells):
         sum_precision += precision
         sum_recall += recall
 
+        if len(evidence) > 0:
+            sum_precision_tables_only += precision
+            sum_recall_tables_only += recall
 
-    precision_tables_only = sum_precision/claims_with_table_evidence
-    recall_tables_only = sum_recall/claims_with_table_evidence
+
+    precision_tables_only = sum_precision_tables_only/claims_with_table_evidence
+    recall_tables_only = sum_recall_tables_only/claims_with_table_evidence
     f1_tables_only = 2*((precision_tables_only*recall_tables_only)/(precision_tables_only+recall_tables_only))
     precision_all = sum_precision/len(data)
     recall_all = sum_recall/len(data)

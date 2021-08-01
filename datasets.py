@@ -109,7 +109,7 @@ class PredictionDataset(torch.utils.data.Dataset):
             output = {
                 "tapas_input": tapas_input,
                 "roberta_input": roberta_input,
-                # "label": label_to_id_map[item.label] if item.label else "",
+                "label": label_to_id_map[item.label],
                 "claim": item.claim
             }
             return output

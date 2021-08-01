@@ -48,6 +48,17 @@
             ],
         },
         {
+            "name": "FEVER: Retrieve documents with BM25",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/document_retrieval_with_bm25.py",
+            "console": "integratedTerminal",
+            "args":[
+                "--corpus_path=/media/martin/Windows/data/corpus/",
+                "--out_path=data/bm25/"
+            ],
+        },
+        {
             "name": "FEVER: Retrieve documents (Train set)",
             "type": "python",
             "request": "launch",
@@ -452,14 +463,14 @@
             ],
         },
         {
-            "name": "FEVER: Create ID Label Map (Eval)",
+            "name": "FEVER: Create ID Label Map (Dev)",
             "type": "python",
             "request": "launch",
             "program": "${workspaceFolder}/create_id_label_map.py",
             "console": "integratedTerminal",
             "args":[
                 "--data_file=train_data/dev.jsonl", 
-                "--out_file=data/id_label_map_eval.json",
+                "--out_file=data/dev/id_label_map_eval.json",
             ],
         },
         {
@@ -508,7 +519,7 @@
             "program": "${workspaceFolder}/eval_veracity_prediction_model.py",
             "console": "integratedTerminal",
             "args":[
-                "--eval_csv_file=data/entailment_eval_data.csv",
+                "--csv_file=data/entailment_eval_data.csv",
                 "--model_file=models/veracity_prediction_model.pth",
                 "--batch_size=16",
                 "--out_file=data/dev/veracity_prediction_accuracy.json"
