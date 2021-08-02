@@ -4,7 +4,17 @@ My contribution for the FEVER 2021 Shared Task
 
 More information about the FEVER 2021 Shared Task can be found here: https://fever.ai/task.html
 
-## TODO: Add installation requirements
+## Creating Anaconda environment 
+
+Run the following command to create the conda environment, which includes packages needed to run. 
+`conda create --name fever2021 --file fever-conda.txt`
+
+Then activate the environment by running: 
+`conda activate fever2021`
+
+Install the required pip packages: 
+`pip install -r requirements.txt`
+
 
 
 
