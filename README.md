@@ -4,6 +4,10 @@ My contribution for the FEVER 2021 Shared Task
 
 More information about the FEVER 2021 Shared Task can be found here: https://fever.ai/task.html
 
+## Cloning the repo
+
+Use `git clone --recurse-submodules -j8 https://github.com/Martin36/FEVER2021_SharedTask.git` to clone the repo. This will make sure that the submodules are cloned with the repo. 
+
 ## Creating Anaconda environment 
 
 Run the following command to create the conda environment, which includes packages needed to run. 
