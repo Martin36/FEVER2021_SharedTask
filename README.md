@@ -11,13 +11,25 @@ Use `git clone --recurse-submodules -j8 https://github.com/Martin36/FEVER2021_Sh
 ## Creating Anaconda environment 
 
 Run the following command to create the conda environment, which includes packages needed to run. 
-`conda create --name fever2021 --file fever-conda.txt`
+```
+conda create --name fever2021 --file fever-conda.txt
+```
 
 Then activate the environment by running: 
-`conda activate fever2021`
+```
+conda activate fever2021
+```
 
 Install the required pip packages: 
-`pip install -r requirements.txt`
+```
+pip install -r requirements.txt`
+```
+
+Navigate to the FEVEROUS src folder and install the pip requirements for that submodule:
+```
+cd FEVEROUS/src
+pip install -r requirements.txt`
+```
 
 
 
