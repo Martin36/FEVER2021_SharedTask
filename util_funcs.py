@@ -1,4 +1,5 @@
 from argparse import ArgumentError, ArgumentTypeError
+from collections import OrderedDict, defaultdict
 import os
 import sys
 import jsonlines
@@ -17,7 +18,7 @@ sys.path.insert(0, FEVEROUS_PATH)
 from database.feverous_db import FeverousDB
 from utils.wiki_page import WikiPage
 
-# nltk.download('stopwords')
+nltk.download('stopwords')
 porter_stemmer = PorterStemmer()
 s_words = set(stopwords.words('english'))
 
@@ -82,13 +83,14 @@ def load_jsonl(path: str):
             result.append(doc)
     return result
 
-def store_json(data, file_path):
-    if type(data) != dict:
+def store_json(data, file_path, sort_keys=False):
+    if type(data) != dict and type(data) != defaultdict \
+       and type(data) != OrderedDict:
         raise ArgumentTypeError("'data' needs to be a dict")
     if ".json" not in file_path:
         raise ArgumentError("'file_path' needs to include the name of the output file")
     with open(file_path, mode='w') as f:
-        f.write(json.dumps(data))
+        f.write(json.dumps(data, sort_keys=sort_keys, indent=2))
 
 def store_jsonl(data, file_path):
     if type(data) != list:
