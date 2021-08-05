@@ -1,6 +1,8 @@
+import sys
+# sys.path.insert(0, '')
 import argparse
 from collections import defaultdict, OrderedDict
-from util_funcs import load_jsonl, store_json
+from src.utils.util_funcs import load_jsonl, store_json
 import os
 from tqdm import tqdm
 

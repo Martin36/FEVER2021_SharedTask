@@ -15,7 +15,7 @@
             "name": "FEVER: Create dataset stats",
             "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/create_dataset_stats.py",
+            "program": "${workspaceFolder}/src/data_processing/create_dataset_stats.py",
             "console": "integratedTerminal",
             "args":[
                 "--train_data_path=train_data/train.jsonl", 
