@@ -1,27 +1,14 @@
 import os
 import time
-import re
 import json
 import argparse
 import pickle
-import nltk
 import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
 from glob import glob
 from tqdm import tqdm
 
-from nltk.stem.porter import PorterStemmer
-from nltk.corpus import stopwords
-nltk.download('stopwords')
-
-porter_stemmer = PorterStemmer()
-s_words = set(stopwords.words('english'))
-
-def stemming_tokenizer(str_input):
-    words = re.sub(r"[^A-Za-z0-9\-]", " ", str_input).lower().split()
-    words = [word for word in words if word not in s_words]    
-    words = [porter_stemmer.stem(word) for word in words]
-    return words
+from util.util_funcs import stemming_tokenizer
 
 def corpus_generator(corpus_path):
     file_paths = glob(corpus_path + '*.json')

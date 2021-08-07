@@ -45,12 +45,16 @@ def create_table_dict(table):
     return table_dict
 
 
+def calc_f1(precision: float, recall: float):
+    return 2*((precision*recall)/(precision+recall))
+
 
 def extract_sents(doc_json):
     page = WikiPage(doc_json['title'], doc_json)
     sents = [replace_entities(sent.content) for sent in page.get_sentences()]
     sents = [sent.lower() for sent in sents]
     return sents
+
 
 def get_tables_from_docs(db: FeverousDB, doc_names: "list[str]"):
     """ 

@@ -3,57 +3,7 @@ import unicodedata
 from tqdm import tqdm
 from util.util_funcs import calc_f1, load_jsonl, store_json
 
-stats = {
-    "no_match_objs": []
-}
-
-def get_evidence_docs(doc_json):
-    doc_names = []
-    for evidence_content in doc_json['evidence'][0]['content']:
-        doc_name = evidence_content.split('_')[0]
-        if doc_name not in doc_names:
-            doc_names.append(doc_name)
-    return doc_names
-
-def calculate_accuracy(related_docs, train_data):
-    nr_of_correct_samples = 0
-    sum_precision = 0
-    sum_recall = 0
-    for i in tqdm(range(len(train_data))):
-        evidence_docs = get_evidence_docs(train_data[i])
-        nr_of_correct_samples += 1
-        nr_correct_for_current = 0
-        any_match = False
-        for doc in evidence_docs:
-            match = False
-            for rel_doc in related_docs[i]['docs']:
-                if unicodedata.normalize('NFC', rel_doc) == unicodedata.normalize('NFC', doc):
-                    match = True
-                    any_match = True
-                    nr_correct_for_current += 1
-            if not match:
-                nr_of_correct_samples -= 1
-                break
-        
-        if not any_match:
-            no_match_obj = {
-                "claim": train_data[i]['claim'],
-                "evidence_docs": evidence_docs,
-                "related_docs": related_docs[i]['docs']
-            }
-            stats["no_match_objs"].append(no_match_obj)
-
-
-        curr_precision = nr_correct_for_current/len(related_docs[i]["docs"])
-        curr_recall = nr_correct_for_current/len(evidence_docs)
-        sum_precision += curr_precision
-        sum_recall += curr_recall
-    
-    accuracy = (nr_of_correct_samples/len(train_data))*100
-    precision = (sum_precision/len(train_data))*100
-    recall = (sum_recall/len(train_data))*100
-    f1 = calc_f1(precision, recall)
-    return accuracy, precision, recall, f1
+import spacy
 
 def main():
     """
@@ -71,9 +21,9 @@ def main():
 
     args = parser.parse_args()
 
-    if not args.data_path:
+    if not args.train_data_path:
         raise RuntimeError("Invalid train data path")
-    if ".jsonl" not in args.data_path:
+    if ".jsonl" not in args.train_data_path:
         raise RuntimeError("The train data path should include the name of the .jsonl file")
     if not args.top_k_docs_path:
         raise RuntimeError("Invalid top k docs path")

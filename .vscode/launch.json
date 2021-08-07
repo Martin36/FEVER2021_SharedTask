@@ -103,14 +103,27 @@
             ],
         },
         {
-            "name": "FEVER: Calculate document retrieval accuracy",
+            "name": "FEVER: NER document retrieval",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/doc_retrieval/ner_doc_retrieval.py",
+            "console": "integratedTerminal",
+            "args":[
+                "--train_data_path=train_data/train.jsonl", 
+                "--top_k_docs_path=data/document_retrieval/top_10_docs.jsonl",
+                "--out_file=data/doc_retrieval_acc.json"
+            ],
+        },
+        {
+            "name": "FEVER: Calculate document retrieval accuracy (Train)",
             "type": "python",
             "request": "launch",
             "program": "${workspaceFolder}/src/doc_retrieval/calculate_doc_retrieval_accuracy.py",
             "console": "integratedTerminal",
             "args":[
-                "--train_data_path=train_data/train.jsonl", 
+                "--data_path=train_data/train.jsonl", 
                 "--top_k_docs_path=data/document_retrieval/top_10_docs.jsonl",
+                "--out_file=data/doc_retrieval_acc.json"
             ],
         },
         {
