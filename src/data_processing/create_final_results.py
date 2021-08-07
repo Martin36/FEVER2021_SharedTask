@@ -1,11 +1,10 @@
 import argparse
-from random import randint
-from util_funcs import load_jsonl, store_jsonl
+from util.util_funcs import load_jsonl, store_jsonl
 
 from tqdm import tqdm
 
 def main():
-    parser = argparse.ArgumentParser(description="Trains the veracity prediction model")
+    parser = argparse.ArgumentParser(description="Creates the final results for the evaluation of FEVEROUS score")
     parser.add_argument("--test_data_file", default=None, type=str, help="Path to the csv file containing the evaluation examples")
     parser.add_argument("--veracity_predictions_file", default=None, type=str, help="Path to the trained veracity prediction model")
     parser.add_argument("--sentence_evidence_file", default=None, type=str, help="Path to the trained veracity prediction model")

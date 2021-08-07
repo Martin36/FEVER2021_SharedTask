@@ -5,6 +5,7 @@ import torch
 
 from tqdm import tqdm
 
+# TODO: fix these
 from document_retrieval import get_top_k_docs
 from sentence_retrieval import get_top_sents_for_claim
 from entailment_with_t5 import get_veracity_label
@@ -12,8 +13,8 @@ from retrieve_tables_with_tapas import retrieve_tables
 from create_tapas_tables import create_tables
 import retrieve_table_cells
 
-from util_funcs import load_jsonl, stemming_tokenizer # "stemming_tokenizer" needs to be imported since it is used in the imported TF-IDF model
-from util_funcs import get_tables_from_docs
+from util.util_funcs import load_jsonl, stemming_tokenizer # "stemming_tokenizer" needs to be imported since it is used in the imported TF-IDF model
+from util.util_funcs import get_tables_from_docs
 
 DIR_PATH = os.path.abspath(os.getcwd())
 

@@ -3,12 +3,11 @@ from collections import defaultdict
 import pandas as pd
 import numpy as np
 import os
-import sys
 import shutil
 
 from tqdm import tqdm
 
-from util_funcs import load_jsonl, remove_header_tokens
+from util.util_funcs import load_jsonl, remove_header_tokens
 
 
 
@@ -157,7 +156,7 @@ def create_tables(tapas_train_data, out_path, table_out_path,
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Extracts the text from the feverous db and creates a corpus")
+    parser = argparse.ArgumentParser(description="Converts the tapas data to the appropriate csv format for the pytorch model")
     parser.add_argument("--tapas_train_path", default=None, type=str, help="Path to the tapas train data")
     parser.add_argument("--out_path", default=None, type=str, help="Path to the output folder, where the top k documents should be stored")
     parser.add_argument("--table_out_path", default=None, type=str, help="Path to the output folder, where the top k documents should be stored")

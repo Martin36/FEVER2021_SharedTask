@@ -83,7 +83,20 @@ def load_jsonl(path: str):
             result.append(doc)
     return result
 
+
 def store_json(data, file_path, sort_keys=False):
+    """ Function for storing a dict to a json file
+
+        Parameters
+        ----------
+        data : dict
+            The dict to be stored in the json file
+        file_path : str
+            The path to the file to be created (note: will delete files that have the same name)
+        sort_keys : bool, optional
+            Set to True if the keys in the dict should be sorted before stored
+    """
+
     if type(data) != dict and type(data) != defaultdict \
        and type(data) != OrderedDict:
         raise ArgumentTypeError("'data' needs to be a dict")
@@ -91,6 +104,7 @@ def store_json(data, file_path, sort_keys=False):
         raise ArgumentError("'file_path' needs to include the name of the output file")
     with open(file_path, mode='w') as f:
         f.write(json.dumps(data, sort_keys=sort_keys, indent=2))
+
 
 def store_jsonl(data, file_path):
     if type(data) != list:

@@ -9,7 +9,7 @@ from collections import defaultdict
 from tqdm import tqdm
 from transformers import RobertaTokenizerFast, RobertaModel, TapasTokenizer, TapasModel
 from torch.cuda.amp import GradScaler
-from datasets import PredictionDataset, collate_fn
+from util.datasets import PredictionDataset, collate_fn
 from prediction_network import PredictionNetwork
 
 stats = defaultdict(int)

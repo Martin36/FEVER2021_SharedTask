@@ -1,7 +1,7 @@
 import argparse
 import unicodedata
 
-from util_funcs import load_jsonl
+from util.util_funcs import load_jsonl
 
 def calculate_score(train_data, related_sents, k, print_low_recall=False):
     sum_precision = 0
@@ -42,7 +42,7 @@ def calculate_score(train_data, related_sents, k, print_low_recall=False):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Extracts the text from the feverous db and creates a corpus")
+    parser = argparse.ArgumentParser(description="Calculates the accuracy of the sentence retrieval")
     parser.add_argument("--train_data_path", default=None, type=str, help="Path to the train data")
     parser.add_argument("--top_k_sents_path", default=None, type=str, help="Path to the top k docs from the document retriever")
     parser.add_argument("--k", default=None, type=int, help="The number of retrieved sentences for each claim")

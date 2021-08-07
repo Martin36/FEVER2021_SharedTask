@@ -7,7 +7,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 from tqdm import tqdm
 
-from util_funcs import load_jsonl, replace_entities, extract_sents
+from util.util_funcs import load_jsonl, replace_entities, extract_sents
 
 DIR_PATH = os.path.abspath(os.getcwd())
 
@@ -150,10 +150,10 @@ def store_top_sents(top_sents, nr_of_sents, path):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Extracts the text from the feverous db and creates a corpus")
+    parser = argparse.ArgumentParser(description="Retrieves the most similar sentences from the given documents")
     parser.add_argument("--db_path", default=None, type=str, help="Path to the FEVEROUS database")
     parser.add_argument("--top_docs_path", default=None, type=str, help="Path to the file for the top docs predictions")
-    parser.add_argument("--out_path", default=None, type=str, help="Path to the output folder, where the top k documents should be stored")
+    parser.add_argument("--out_path", default=None, type=str, help="Path to the output folder, where the top k sentences should be stored")
     parser.add_argument("--nr_of_sents", default=5, type=int, help="The number of sentences to retrieve from each document")
     parser.add_argument("--use_tables", default=False, action="store_true", help="Tells the script if it should use table content when matching")
     parser.add_argument("--n_gram_min", default=1, type=int, help="The lower bound of the ngrams, e.g. 1 for unigrams and 2 for bigrams")

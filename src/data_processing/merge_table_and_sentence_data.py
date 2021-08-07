@@ -1,11 +1,11 @@
 import argparse
 import pandas as pd
 
-from util_funcs import load_json, load_jsonl
+from util.util_funcs import load_json, load_jsonl
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Trains the veracity prediction model")
+    parser = argparse.ArgumentParser(description="Merges table and sentence data for input to the veracity prediction model")
     parser.add_argument("--tapas_csv_file", default=None, type=str, help="Path to the csv file containing the tapas data")
     parser.add_argument("--sentence_data_file", default=None, type=str, help="Path to the jsonl file containing the sentence evidence")
     parser.add_argument("--id_label_map_file", default=None, type=str, help="Path to the json file containing the id label mapping")

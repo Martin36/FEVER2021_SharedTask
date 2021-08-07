@@ -7,7 +7,7 @@ import pandas as pd
 from tqdm import tqdm
 from transformers import TapasConfig, TapasForQuestionAnswering, TapasTokenizer, AdamW
 
-from table_dataset import collate_fn, TableDataset
+from util.datasets import collate_fn, TableDataset
 
 torch.autograd.set_detect_anomaly(True)
 
@@ -44,7 +44,7 @@ def train_model(train_dataloader, device, model_path, tapas_model_name):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Extracts the text from the feverous db and creates a corpus")
+    parser = argparse.ArgumentParser(description="Trains the tapas model used for representing tables in the entailment prediction model")
     parser.add_argument("--train_csv_path", default=None, type=str, help="Path to the csv file containing the training examples")
     parser.add_argument("--tapas_model_name", default='google/tapas-base', type=str, help="Name of the pretrained tapas model")
     parser.add_argument("--model_path", default=None, type=str, help="Path to the output folder for the model")

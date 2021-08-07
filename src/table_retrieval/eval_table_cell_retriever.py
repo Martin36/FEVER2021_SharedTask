@@ -1,7 +1,9 @@
-from collections import defaultdict
-from util_funcs import load_jsonl, store_json
 import argparse
+
+from collections import defaultdict
 from tqdm import tqdm
+
+from util.util_funcs import load_jsonl, store_json
 
 stats = defaultdict(int)
 

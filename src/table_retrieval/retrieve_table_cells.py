@@ -1,6 +1,4 @@
-from collections import defaultdict
 import os,sys
-from util_funcs import load_jsonl, get_tables_from_docs, store_jsonl
 import torch
 import argparse
 import shutil
@@ -9,6 +7,9 @@ import pandas as pd
 from tqdm import tqdm
 from transformers import TapasTokenizer
 from create_tapas_tables import create_tables
+from collections import defaultdict
+
+from util.util_funcs import load_jsonl, get_tables_from_docs, store_jsonl
 
 DIR_PATH = os.path.abspath(os.getcwd())
 
@@ -87,7 +88,7 @@ def predict(model, tokenizer, data_path, device):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Trains the veracity prediction model")
+    parser = argparse.ArgumentParser(description="Retrieves the top tables cells from the top tables")
     parser.add_argument("--db_path", default=None, type=str, help="Path to the FEVEROUS database")
     parser.add_argument("--data_file", default=None, type=str, help="Path to the csv file containing the evaluation examples")
     parser.add_argument("--model_file", default=None, type=str, help="Path to the trained veracity prediction model")

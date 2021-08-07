@@ -1,7 +1,7 @@
 import argparse
 import unicodedata
 
-from util_funcs import load_jsonl
+from util.util_funcs import load_jsonl
 
 def get_evidence_docs(doc_json):
     doc_names = []
@@ -34,7 +34,7 @@ def calculate_accuracy(related_docs, train_data, print_examples=False):
     return accuracy
 
 def main():
-    parser = argparse.ArgumentParser(description="Extracts the text from the feverous db and creates a corpus")
+    parser = argparse.ArgumentParser(description="Calculates the accuracy of the document retrieval results")
     parser.add_argument("--train_data_path", default=None, type=str, help="Path to the train data")
     parser.add_argument("--top_k_docs_path", default=None, type=str, help="Path to the top k docs from the document retriever")
 

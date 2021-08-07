@@ -6,7 +6,7 @@ import jsonlines
 
 from tqdm import tqdm
 
-from util_funcs import replace_entities, load_jsonl, create_table_dict
+from util.util_funcs import replace_entities, load_jsonl, create_table_dict
 
 DIR_PATH = os.path.abspath(os.getcwd())
 
@@ -109,10 +109,10 @@ def store_tapas_data(tapas_data, out_path):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Extracts the text from the feverous db and creates a corpus")
+    parser = argparse.ArgumentParser(description="Converts the given dataset to the correct format for tapas")
     parser.add_argument("--db_path", default=None, type=str, help="Path to the FEVEROUS database")
     parser.add_argument("--train_data_path", default=None, type=str, help="Path to the train data")
-    parser.add_argument("--out_path", default=None, type=str, help="Path to the output folder, where the top k documents should be stored")
+    parser.add_argument("--out_path", default=None, type=str, help="Path to the output folder")
 
     args = parser.parse_args()
 

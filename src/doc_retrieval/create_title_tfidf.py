@@ -7,7 +7,7 @@ import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
 from glob import glob
 from tqdm import tqdm
-from util_funcs import stemming_tokenizer
+from util.util_funcs import stemming_tokenizer
 
 def corpus_generator(corpus_path):
     file_paths = glob(corpus_path + '*.json')

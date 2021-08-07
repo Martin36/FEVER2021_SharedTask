@@ -112,7 +112,7 @@ def evaluate_model(model, tokenizer, data, device, verbose):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Extracts the text from the feverous db and creates a corpus")
+    parser = argparse.ArgumentParser(description="Evaluates the fine tuned tapas model for predicting veracity")
     parser.add_argument("--table_csv_path", default=None, type=str, help="Path to the folder containing the csv tables")
     parser.add_argument("--eval_csv_path", default=None, type=str, help="Path to the csv file containing the evaluation examples")
     parser.add_argument("--tapas_model_name", default='google/tapas-base', type=str, help="Name of the pretrained tapas model")

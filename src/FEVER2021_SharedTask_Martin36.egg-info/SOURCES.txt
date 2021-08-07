@@ -1,0 +1,11 @@
+LICENSE
+README.md
+pyproject.toml
+setup.cfg
+src/FEVER2021_SharedTask_Martin36.egg-info/PKG-INFO
+src/FEVER2021_SharedTask_Martin36.egg-info/SOURCES.txt
+src/FEVER2021_SharedTask_Martin36.egg-info/dependency_links.txt
+src/FEVER2021_SharedTask_Martin36.egg-info/top_level.txt
+src/utils/__init__.py
+src/utils/datasets.py
+src/utils/util_funcs.py

@@ -27,10 +27,10 @@
             "name": "FEVER: Create corpus",
             "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/create_corpus.py",
+            "program": "${workspaceFolder}/src/data_processing/create_corpus.py",
             "console": "integratedTerminal",
             "args":[
-                "--db_path=/media/martin/Windows/data/feverous_wikiv1.db", 
+                "--db_path=data/feverous_wikiv1.db", 
                 "--out_path=data/corpus/"
             ],
         },
@@ -38,7 +38,7 @@
             "name": "FEVER: Create TF-IDF",
             "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/create_tfidf.py",
+            "program": "${workspaceFolder}/src/doc_retrieval/create_tfidf.py",
             "console": "integratedTerminal",
             "args":[
                 "--use_stemming", 
@@ -50,7 +50,7 @@
             "name": "FEVER: Create title TF-IDF",
             "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/create_title_tfidf.py",
+            "program": "${workspaceFolder}/src/doc_retrieval/create_title_tfidf.py",
             "console": "integratedTerminal",
             "args":[
                 "--corpus_path=data/corpus/",
@@ -63,10 +63,10 @@
             "name": "FEVER: Retrieve documents with BM25",
             "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/document_retrieval_with_bm25.py",
+            "program": "${workspaceFolder}/src/doc_retrieval/document_retrieval_with_bm25.py",
             "console": "integratedTerminal",
             "args":[
-                "--corpus_path=/media/martin/Windows/data/corpus/",
+                "--corpus_path=data/corpus/",
                 "--out_path=data/bm25/"
             ],
         },
@@ -74,7 +74,7 @@
             "name": "FEVER: Retrieve documents (Train set)",
             "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/document_retrieval.py",
+            "program": "${workspaceFolder}/src/doc_retrieval/document_retrieval.py",
             "console": "integratedTerminal",
             "args":[
                 "--doc_id_map_path=tfidf/doc_id_map.json", 
@@ -90,7 +90,7 @@
             "name": "FEVER: Retrieve documents (Dev set)",
             "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/document_retrieval.py",
+            "program": "${workspaceFolder}/src/doc_retrieval/document_retrieval.py",
             "console": "integratedTerminal",
             "args":[
                 "--doc_id_map_path=tfidf/doc_id_map.json", 
@@ -106,7 +106,7 @@
             "name": "FEVER: Calculate document retrieval accuracy",
             "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/calculate_doc_retrieval_accuracy.py",
+            "program": "${workspaceFolder}/src/doc_retrieval/calculate_doc_retrieval_accuracy.py",
             "console": "integratedTerminal",
             "args":[
                 "--train_data_path=train_data/train.jsonl", 
@@ -117,10 +117,10 @@
             "name": "FEVER: Retrieve top sentences",
             "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/sentence_retrieval.py",
+            "program": "${workspaceFolder}/src/sent_retrieval/sentence_retrieval.py",
             "console": "integratedTerminal",
             "args":[
-                "--db_path=/media/martin/Windows/data/feverous_wikiv1.db", 
+                "--db_path=data/feverous_wikiv1.db", 
                 "--top_docs_path=data/document_retrieval/top_10_docs.jsonl",
                 "--out_path=data/document_retrieval",
                 "--n_gram_min=1",
@@ -131,7 +131,7 @@
             "name": "FEVER: Calculate sentence retrieval accuracy",
             "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/calculate_sentence_retrieval_accuracy.py",
+            "program": "${workspaceFolder}/src/sent_retrieval/calculate_sentence_retrieval_accuracy.py",
             "console": "integratedTerminal",
             "args":[
                 "--train_data_path=train_data/train.jsonl", 
@@ -143,10 +143,10 @@
             "name": "FEVER: Create Tapas Train Data",
             "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/create_tapas_data.py",
+            "program": "${workspaceFolder}/src/data_processing/create_tapas_data.py",
             "console": "integratedTerminal",
             "args":[
-                "--db_path=/media/martin/Windows/data/feverous_wikiv1.db", 
+                "--db_path=data/feverous_wikiv1.db", 
                 "--train_data_path=train_data/train.jsonl", 
                 "--out_path=data/tapas/train/"
             ],
@@ -155,10 +155,10 @@
             "name": "FEVER: Create Tapas Dev Data",
             "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/create_tapas_data.py",
+            "program": "${workspaceFolder}/src/data_processing/create_tapas_data.py",
             "console": "integratedTerminal",
             "args":[
-                "--db_path=/media/martin/Windows/data/feverous_wikiv1.db", 
+                "--db_path=data/feverous_wikiv1.db", 
                 "--train_data_path=train_data/dev.jsonl", 
                 "--out_path=data/tapas/dev/"
             ],
@@ -378,7 +378,7 @@
             "name": "FEVER: Create Tapas Train Tables",
             "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/create_tapas_tables.py",
+            "program": "${workspaceFolder}/src/data_processing/create_tapas_tables.py",
             "console": "integratedTerminal",
             "args":[
                 "--tapas_train_path=data/tapas/tapas_train.jsonl", 
@@ -390,7 +390,7 @@
             "name": "FEVER: Create Tapas Dev Tables",
             "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/create_tapas_tables.py",
+            "program": "${workspaceFolder}/src/data_processing/create_tapas_tables.py",
             "console": "integratedTerminal",
             "args":[
                 "--tapas_train_path=data/tapas/dev/tapas_dev.jsonl", 
@@ -403,7 +403,7 @@
             "name": "FEVER: Train tapas model",
             "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/entailment_with_tapas.py",
+            "program": "${workspaceFolder}/src/entailment/entailment_with_tapas.py",
             "console": "integratedTerminal",
             "args":[
                 "--train_csv_path=data/tapas/train_data/tapas_data.csv",
@@ -417,7 +417,7 @@
             "name": "FEVER: Eval tapas model",
             "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/entailment_with_tapas_predict.py",
+            "program": "${workspaceFolder}/src/entailment/entailment_with_tapas_predict.py",
             "console": "integratedTerminal",
             "args":[
                 "--table_csv_path=data/tapas/dev/tables/", 
@@ -432,10 +432,10 @@
             "name": "FEVER: Create Sentence Entailment Data (Train)",
             "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/create_sentence_entailment_data.py",
+            "program": "${workspaceFolder}/src/data_processing/create_sentence_entailment_data.py",
             "console": "integratedTerminal",
             "args":[
-                "--db_path=/media/martin/Windows/data/feverous_wikiv1.db", 
+                "--db_path=data/feverous_wikiv1.db", 
                 "--input_data_file=train_data/train.jsonl", 
                 "--output_data_file=data/sentence_entailment_train_data.jsonl",
             ],
@@ -444,10 +444,10 @@
             "name": "FEVER: Create Sentence Entailment Data (Eval)",
             "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/create_sentence_entailment_data.py",
+            "program": "${workspaceFolder}/src/data_processing/create_sentence_entailment_data.py",
             "console": "integratedTerminal",
             "args":[
-                "--db_path=/media/martin/Windows/data/feverous_wikiv1.db", 
+                "--db_path=data/feverous_wikiv1.db", 
                 "--input_data_file=train_data/dev.jsonl", 
                 "--output_data_file=data/sentence_entailment_eval_data.jsonl",
             ],
@@ -456,7 +456,7 @@
             "name": "FEVER: Entailment with T5",
             "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/entailment_with_t5.py",
+            "program": "${workspaceFolder}/src/entailment/entailment_with_t5.py",
             "console": "integratedTerminal",
             "args":[
                 "--train_data_path=data/sentence_entailment_train_data.jsonl",
@@ -464,32 +464,23 @@
             "justMyCode": false
         },
         {
-            "name": "FEVER: Create ID Label Map (Train)",
+            "name": "FEVER: Create ID Label Map",
             "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/create_id_label_map.py",
+            "program": "${workspaceFolder}/src/data_processing/create_id_label_map.py",
             "console": "integratedTerminal",
             "args":[
-                "--data_file=train_data/train.jsonl", 
-                "--out_file=data/id_label_map_train.json",
-            ],
-        },
-        {
-            "name": "FEVER: Create ID Label Map (Dev)",
-            "type": "python",
-            "request": "launch",
-            "program": "${workspaceFolder}/create_id_label_map.py",
-            "console": "integratedTerminal",
-            "args":[
-                "--data_file=train_data/dev.jsonl", 
-                "--out_file=data/dev/id_label_map_eval.json",
+                "--train_data_file=train_data/train.jsonl", 
+                "--dev_data_file=train_data/dev.jsonl", 
+                "--train_out_file=data/id_label_map_train.json",
+                "--dev_out_file=data/dev/id_label_map_eval.json",
             ],
         },
         {
             "name": "FEVER: Merge Table and Sentence Data (Train)",
             "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/merge_table_and_sentence_data.py",
+            "program": "${workspaceFolder}/src/data_processing/merge_table_and_sentence_data.py",
             "console": "integratedTerminal",
             "args":[
                 "--tapas_csv_file=data/tapas/train_data/tapas_data.csv",
@@ -502,7 +493,7 @@
             "name": "FEVER: Merge Table and Sentence Data (Eval)",
             "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/merge_table_and_sentence_data.py",
+            "program": "${workspaceFolder}/src/data_processing/merge_table_and_sentence_data.py",
             "console": "integratedTerminal",
             "args":[
                 "--tapas_csv_file=data/tapas/dev/tapas_data.csv",
@@ -515,7 +506,7 @@
             "name": "FEVER: Train Veracity Prediction Model",
             "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/train_veracity_prediction_model.py",
+            "program": "${workspaceFolder}/src/entailment/train_veracity_prediction_model.py",
             "console": "integratedTerminal",
             "args":[
                 "--train_csv_path=data/entailment_train_data.csv",
@@ -528,7 +519,7 @@
             "name": "FEVER: Eval Veracity Prediction Model",
             "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/eval_veracity_prediction_model.py",
+            "program": "${workspaceFolder}/src/entailment/eval_veracity_prediction_model.py",
             "console": "integratedTerminal",
             "args":[
                 "--csv_file=data/entailment_eval_data.csv",
@@ -542,10 +533,10 @@
             "name": "FEVER: Retrieve Tables with Tapas (Dev)",
             "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/retrieve_tables_with_tapas.py",
+            "program": "${workspaceFolder}/src/table_retrieval/retrieve_tables_with_tapas.py",
             "console": "integratedTerminal",
             "args":[
-                "--db_path=/media/martin/Windows/data/feverous_wikiv1.db", 
+                "--db_path=data/feverous_wikiv1.db", 
                 "--output_dir=data/dev/",
                 "--model_dir=tapas_models",
                 "--init_checkpoint=tapas_dual_encoder_proj_256_tiny/model.ckpt",
@@ -558,10 +549,10 @@
             "name": "FEVER: Retrieve Table cells (Dev)",
             "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/retrieve_table_cells.py",
+            "program": "${workspaceFolder}/src/table_retrieval/retrieve_table_cells.py",
             "console": "integratedTerminal",
             "args":[
-                "--db_path=/media/martin/Windows/data/feverous_wikiv1.db", 
+                "--db_path=data/feverous_wikiv1.db", 
                 "--data_file=data/dev/top_5_tables.jsonl",
                 "--model_file=models/tapas_model.pth",
                 "--batch_size=64",
@@ -573,10 +564,10 @@
             "name": "FEVER: Retrieve Table cells (Test)",
             "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/retrieve_table_cells.py",
+            "program": "${workspaceFolder}/src/table_retrieval/retrieve_table_cells.py",
             "console": "integratedTerminal",
             "args":[
-                "--db_path=/media/martin/Windows/data/feverous_wikiv1.db", 
+                "--db_path=data/feverous_wikiv1.db", 
                 "--data_file=data/test/top_5_tables.jsonl",
                 "--model_file=models/tapas_model.pth",
                 "--batch_size=64",
@@ -588,7 +579,7 @@
             "name": "FEVER: Eval Table Cell Retriever (Dev)",
             "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/eval_table_cell_retriever.py",
+            "program": "${workspaceFolder}/src/table_retrieval/eval_table_cell_retriever.py",
             "console": "integratedTerminal",
             "args":[
                 "--retrieved_cells_file=data/dev/top_table_cells.jsonl",
@@ -603,7 +594,7 @@
             "program": "${workspaceFolder}/run_e2e.py",
             "console": "integratedTerminal",
             "args":[
-                "--db_path=/media/martin/Windows/data/feverous_wikiv1.db", 
+                "--db_path=data/feverous_wikiv1.db", 
                 "--doc_id_map_path=tfidf/doc_id_map.json", 
                 "--vectorizer_path=tfidf/vectorizer-stemmed-32bit.pickle",
                 "--wm_path=tfidf/tfidf_wm-stemmed-32bit.pickle",
@@ -619,7 +610,7 @@
             "name": "TEST: Retrieve documents",
             "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/document_retrieval.py",
+            "program": "${workspaceFolder}/src/doc_retrieval/document_retrieval.py",
             "console": "integratedTerminal",
             "args":[
                 "--doc_id_map_path=tfidf/doc_id_map.json", 
@@ -635,10 +626,10 @@
             "name": "TEST: Retrieve top sentences",
             "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/sentence_retrieval.py",
+            "program": "${workspaceFolder}/src/sent_retrieval/sentence_retrieval.py",
             "console": "integratedTerminal",
             "args":[
-                "--db_path=/media/martin/Windows/data/feverous_wikiv1.db", 
+                "--db_path=data/feverous_wikiv1.db", 
                 "--top_docs_path=data/test/top_10_docs.jsonl",
                 "--out_path=data/test",
                 "--n_gram_min=1",
@@ -649,10 +640,10 @@
             "name": "TEST: Retrieve Tables with Tapas",
             "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/retrieve_tables_with_tapas.py",
+            "program": "${workspaceFolder}/src/table_retrieval/retrieve_tables_with_tapas.py",
             "console": "integratedTerminal",
             "args":[
-                "--db_path=/media/martin/Windows/data/feverous_wikiv1.db", 
+                "--db_path=data/feverous_wikiv1.db", 
                 "--output_dir=data/test/",
                 "--model_dir=tapas_models",
                 "--init_checkpoint=tapas_dual_encoder_proj_256_tiny/model.ckpt",
@@ -665,10 +656,10 @@
             "name": "TEST: Convert Data to Tapas Format",
             "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/convert_test_to_tapas_data.py",
+            "program": "${workspaceFolder}/src/data_processing/convert_test_to_tapas_data.py",
             "console": "integratedTerminal",
             "args":[
-                "--db_path=/media/martin/Windows/data/feverous_wikiv1.db", 
+                "--db_path=data/feverous_wikiv1.db", 
                 "--retrieved_tables_file=data/test/top_5_tables.jsonl",
                 "--output_data_file=data/test/tapas_data.jsonl",
             ],
@@ -677,7 +668,7 @@
             "name": "TEST: Create Tapas Tables",
             "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/create_tapas_tables.py",
+            "program": "${workspaceFolder}/src/data_processing/create_tapas_tables.py",
             "console": "integratedTerminal",
             "args":[
                 "--tapas_train_path=data/test/tapas_data.jsonl",
@@ -691,10 +682,10 @@
             "name": "TEST: Create Sentence Entailment Data",
             "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/create_sentence_entailment_data.py",
+            "program": "${workspaceFolder}/src/data_processing/create_sentence_entailment_data.py",
             "console": "integratedTerminal",
             "args":[
-                "--db_path=/media/martin/Windows/data/feverous_wikiv1.db", 
+                "--db_path=data/feverous_wikiv1.db", 
                 "--input_data_file=data/test/top_5_sents.jsonl", 
                 "--output_data_file=data/test/sentence_entailment_data.jsonl",
                 "--is_predict"
@@ -704,7 +695,7 @@
             "name": "TEST: Merge Table and Sentence Data",
             "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/merge_table_and_sentence_data_test_set.py",
+            "program": "${workspaceFolder}/src/data_processing/merge_table_and_sentence_data_test_set.py",
             "console": "integratedTerminal",
             "args":[
                 "--tapas_csv_file=data/test/tapas_data.csv",
@@ -716,10 +707,10 @@
             "name": "TEST: Retrieve Table cells",
             "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/retrieve_table_cells.py",
+            "program": "${workspaceFolder}/src/table_retrieval/retrieve_table_cells.py",
             "console": "integratedTerminal",
             "args":[
-                "--db_path=/media/martin/Windows/data/feverous_wikiv1.db", 
+                "--db_path=data/feverous_wikiv1.db", 
                 "--data_file=data/test/top_5_tables.jsonl",
                 "--model_file=models/tapas_model.pth",
                 "--batch_size=64",
@@ -731,7 +722,7 @@
             "name": "TEST: Predict Veracity",
             "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/predict_veracity.py",
+            "program": "${workspaceFolder}/src/entailment/predict_veracity.py",
             "console": "integratedTerminal",
             "args":[
                 "--in_file=data/test/entailment_data.csv",
@@ -744,7 +735,7 @@
             "name": "TEST: Create final results",
             "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/create_final_results.py",
+            "program": "${workspaceFolder}/src/data_processing/create_final_results.py",
             "console": "integratedTerminal",
             "args":[
                 "--test_data_file=train_data/feverous_test_unlabeled.jsonl",
@@ -758,7 +749,7 @@
             "name": "TEST: Evaluate Results",
             "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/evaluate_final_results.py",
+            "program": "${workspaceFolder}/src/data_processing/evaluate_final_results.py",
             "console": "integratedTerminal",
             "args":[
                 "--input_path=data/test/final_output.jsonl",

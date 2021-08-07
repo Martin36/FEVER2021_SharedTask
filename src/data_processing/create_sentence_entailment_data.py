@@ -10,7 +10,7 @@ sys.path.insert(0, FEVEROUS_PATH)
 
 from database.feverous_db import FeverousDB
 from utils.wiki_page import WikiPage
-from util_funcs import load_jsonl, replace_entities, store_jsonl
+from util.util_funcs import load_jsonl, replace_entities, store_jsonl
 
 stats = defaultdict(int)
 

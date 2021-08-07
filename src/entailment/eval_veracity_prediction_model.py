@@ -1,7 +1,6 @@
 import argparse
 import ast
 import time
-from util_funcs import store_json
 import torch
 import torch.nn as nn
 import pandas as pd
@@ -11,7 +10,8 @@ from tqdm import tqdm
 from transformers import RobertaTokenizerFast, RobertaModel, TapasTokenizer, TapasModel
 from torch.utils.data import DataLoader
 
-from datasets import PredictionDataset, collate_fn, id_to_label_map
+from util.util_funcs import store_json
+from util.datasets import PredictionDataset, collate_fn, id_to_label_map
 from prediction_network import PredictionNetwork    # Needed for the import of the model
 
 stats = defaultdict(int)
@@ -142,11 +142,6 @@ def main():
     print("Stored accuracy for veracity prediction model in '{}'".format(args.out_file))
 
     
-
-
-
-
-
 if __name__ == "__main__":
     main()
 

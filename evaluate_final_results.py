@@ -1,7 +1,7 @@
 import os, sys
 import argparse
 from random import randint
-from util_funcs import load_jsonl, store_jsonl
+from util.util_funcs import load_jsonl, store_jsonl
 
 DIR_PATH = os.path.abspath(os.getcwd())
 

@@ -8,7 +8,7 @@ import math
 
 from sklearn.metrics.pairwise import cosine_similarity
 
-from util_funcs import load_jsonl, stemming_tokenizer # "stemming_tokenizer" needs to be imported since it is used in the imported TF-IDF model
+from util.util_funcs import load_jsonl, stemming_tokenizer # "stemming_tokenizer" needs to be imported since it is used in the imported TF-IDF model
 
 def load_doc_id_map(path):
     with open(path, 'r') as f:

@@ -15,7 +15,7 @@ from tqdm import tqdm
 
 import tensorflow.compat.v1 as tf
 
-from util_funcs import get_tables_from_docs, load_jsonl, store_jsonl
+from util.util_funcs import get_tables_from_docs, load_jsonl, store_jsonl
 
 
 DIR_PATH = os.path.abspath(os.getcwd())
@@ -284,7 +284,7 @@ def retrieve_tables(db, data, nr_tables_to_retrieve,
 
 
 def main():
-    """ This script should use an already trained tapas model """
+    """ Note: This script should use an already trained tapas model """
     parser = argparse.ArgumentParser(description="Retrives the most relevant tables from the previously retrieved documents")
     parser.add_argument("--db_path", default=None, type=str, help="Path to the FEVEROUS database")
     parser.add_argument("--bert_config_file", default=None, type=str, help="Path to the bert config file")

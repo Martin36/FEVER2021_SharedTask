@@ -13,7 +13,7 @@ sys.path.insert(0, FEVEROUS_PATH)
 
 from database.feverous_db import FeverousDB
 from utils.wiki_page import WikiPage
-from util_funcs import replace_entities
+from util.util_funcs import replace_entities
 
 def extract_sents(doc_json):
     page = WikiPage(doc_json['title'], doc_json)
