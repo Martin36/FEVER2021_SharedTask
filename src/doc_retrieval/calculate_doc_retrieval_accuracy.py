@@ -84,10 +84,9 @@ def main():
     if ".json" not in args.out_file:
         raise RuntimeError("The out file path should include the name of the .json file")
 
-    train_data = load_jsonl(args.train_data_path)
-    train_data = train_data[1:]
+    data = load_jsonl(args.train_data_path)[1:]
     related_docs = load_jsonl(args.top_k_docs_path)
-    accuracy, precision, recall, f1 = calculate_accuracy(related_docs, train_data)
+    accuracy, precision, recall, f1 = calculate_accuracy(related_docs, data)
     print("Accuracy for top k docs is: {}".format(accuracy))
 
     stats["accuracy"] = accuracy

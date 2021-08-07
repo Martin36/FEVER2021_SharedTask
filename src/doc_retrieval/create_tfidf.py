@@ -8,17 +8,8 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from glob import glob
 from tqdm import tqdm
 
-from util.util_funcs import stemming_tokenizer
+from util.util_funcs import stemming_tokenizer, corpus_generator, store_json
 
-def corpus_generator(corpus_path):
-    file_paths = glob(corpus_path + '*.json')
-    #file_paths = glob(corpus_path + 'corpora_1.json')
-    for f_path in file_paths:
-        print("Opening file '{}'".format(f_path))
-        with open(f_path, 'r') as f:
-            docs = json.loads(f.read())
-            for key in tqdm(docs):
-                yield docs[key]
                 
 def create_tfidf(use_stemming, corpus_path):
     # Remove all the words that are in the top decile, as these probably won't contribute much
@@ -42,11 +33,13 @@ def create_tfidf(use_stemming, corpus_path):
     
     return tfidfvectorizer, tfidf_wm
 
+
 def store_tfidf(tfidfvectorizer, tfidf_wm, out_path, use_stemming):
     pickle.dump(tfidfvectorizer, open("{}vectorizer{}32bit.pickle"
         .format(out_path, "-stemmed-" if use_stemming else "-"), "wb"))
     pickle.dump(tfidf_wm, open("{}tfidf_wm{}32bit.pickle"
         .format(out_path, "-stemmed-" if use_stemming else "-"), "wb"))
+
 
 def create_doc_id_map(corpus_path):
     doc_id_map = []
@@ -58,9 +51,6 @@ def create_doc_id_map(corpus_path):
                 doc_id_map.append(key)
     return doc_id_map
 
-def store_doc_id_map(doc_id_map, out_path):
-    with open(out_path + "doc_id_map.json", "w") as f:
-        f.write(json.dumps(doc_id_map))
 
 def main():
     parser = argparse.ArgumentParser(description="Creates the TF-IDF matrix for matching claims with documents")
@@ -88,7 +78,8 @@ def main():
     print("Creating doc id map")
     doc_id_map = create_doc_id_map(args.corpus_path)
     print("Storing doc id map")
-    store_doc_id_map(doc_id_map, args.out_path)
+    doc_id_map_file = args.out_path + "doc_id_map.json"
+    store_json(doc_id_map, doc_id_map_file)
     print("Doc id map stored")
     
 

@@ -2,11 +2,14 @@ from argparse import ArgumentError, ArgumentTypeError
 from collections import OrderedDict, defaultdict
 import os
 import sys
+from typing import Union
 import jsonlines
 import re
 import nltk
 import json
 
+from glob import glob
+from tqdm import tqdm
 from nltk.stem.porter import PorterStemmer
 from nltk.corpus import stopwords
 
@@ -21,6 +24,20 @@ from utils.wiki_page import WikiPage
 nltk.download('stopwords')
 porter_stemmer = PorterStemmer()
 s_words = set(stopwords.words('english'))
+
+
+def calc_f1(precision: float, recall: float):
+    return 2*((precision*recall)/(precision+recall))
+
+
+def corpus_generator(corpus_path: str):
+    file_paths = glob(corpus_path + '*.json')
+    for f_path in file_paths:
+        print("Opening file '{}'".format(f_path))
+        with open(f_path, 'r') as f:
+            docs = json.loads(f.read())
+            for key in tqdm(docs):
+                yield docs[key]
 
 
 def create_table_dict(table):
@@ -43,10 +60,6 @@ def create_table_dict(table):
     table_dict['rows'] = [row for row in table_dict['rows'] if len(row) == len(table_dict['header'])]
     
     return table_dict
-
-
-def calc_f1(precision: float, recall: float):
-    return 2*((precision*recall)/(precision+recall))
 
 
 def extract_sents(doc_json):
@@ -81,6 +94,8 @@ def load_json(path: str):
 
 
 def load_jsonl(path: str):
+    if not ".jsonl" in path:
+        raise ArgumentError("'path' is not pointing to a jsonl file")
     result = []
     with jsonlines.open(path) as reader:
         for doc in reader:
@@ -88,7 +103,8 @@ def load_jsonl(path: str):
     return result
 
 
-def store_json(data, file_path, sort_keys=False):
+def store_json(data: Union[dict, defaultdict, OrderedDict], 
+    file_path: str, sort_keys=False, indent=None):
     """ Function for storing a dict to a json file
 
         Parameters
@@ -98,7 +114,9 @@ def store_json(data, file_path, sort_keys=False):
         file_path : str
             The path to the file to be created (note: will delete files that have the same name)
         sort_keys : bool, optional
-            Set to True if the keys in the dict should be sorted before stored
+            Set to True if the keys in the dict should be sorted before stored (default: False)
+        indent : bool, optional
+            Set this if indentation should be added (default: None)
     """
 
     if type(data) != dict and type(data) != defaultdict \
@@ -107,10 +125,10 @@ def store_json(data, file_path, sort_keys=False):
     if ".json" not in file_path:
         raise ArgumentError("'file_path' needs to include the name of the output file")
     with open(file_path, mode='w') as f:
-        f.write(json.dumps(data, sort_keys=sort_keys, indent=2))
+        f.write(json.dumps(data, sort_keys=sort_keys, indent=indent))
 
 
-def store_jsonl(data, file_path):
+def store_jsonl(data: list, file_path: str):
     if type(data) != list:
         raise ArgumentTypeError("'data' needs to be a list")
     if ".jsonl" not in file_path:

@@ -4,6 +4,15 @@ My contribution for the FEVER 2021 Shared Task
 
 More information about the FEVER 2021 Shared Task can be found here: https://fever.ai/task.html
 
+#### Note: To be able to run this repo you will need at least 70 GB of free memory on your drive and preferably 32 GB of RAM. 
+
+The code is tested on a machine with the following specs:
+- OS: Ubuntu 20.04.2 LTS (64-bit)
+- Graphics: NVIDIA GeForce GTX 970
+- CPU: Intel® Core™ i7-6700 CPU @ 3.40GHz × 8 
+- RAM: 32 GB
+
+
 ## Cloning the repo
 
 Use `git clone --recurse-submodules -j8 https://github.com/Martin36/FEVER2021_SharedTask.git` to clone the repo. This will make sure that the submodules are cloned with the repo. 
