@@ -6,22 +6,38 @@ from tqdm import tqdm
 
 WRITE_TO_FILE = True
 
+
 def main():
-    parser = argparse.ArgumentParser(description="Creates statistics of the provided datasets")
-    parser.add_argument("--train_data_path", default=None, type=str, help="Path to the train dataset file")
-    parser.add_argument("--dev_data_path", default=None, type=str, help="Path to the dev dataset file")
-    parser.add_argument("--out_path", default=None, type=str, help="Path to the output directory")
+    parser = argparse.ArgumentParser(
+        description="Creates statistics of the provided datasets"
+    )
+    parser.add_argument(
+        "--train_data_path",
+        default=None,
+        type=str,
+        help="Path to the train dataset file",
+    )
+    parser.add_argument(
+        "--dev_data_path", default=None, type=str, help="Path to the dev dataset file"
+    )
+    parser.add_argument(
+        "--out_path", default=None, type=str, help="Path to the output directory"
+    )
 
     args = parser.parse_args()
 
     if not args.train_data_path:
         raise RuntimeError("Invalid train data path")
     if ".jsonl" not in args.train_data_path:
-        raise RuntimeError("The train data path should include the name of the .jsonl file")
+        raise RuntimeError(
+            "The train data path should include the name of the .jsonl file"
+        )
     if not args.dev_data_path:
         raise RuntimeError("Invalid dev data path")
     if ".jsonl" not in args.dev_data_path:
-        raise RuntimeError("The dev data path should include the name of the .jsonl file")
+        raise RuntimeError(
+            "The dev data path should include the name of the .jsonl file"
+        )
     if not args.out_path:
         raise RuntimeError("Invalid output dir path")
 
@@ -60,7 +76,7 @@ def main():
                     nr_of_sents += 1
                 else:
                     nr_of_other += 1
-            
+
         if nr_of_cells > 0:
             stats["samples_with_table_cell_evidence"] += 1
             stats["train_samples_with_table_cell_evidence"] += 1
@@ -70,7 +86,7 @@ def main():
         if nr_of_other > 0:
             stats["samples_with_other_evidence"] += 1
             stats["train_samples_with_other_evidence"] += 1
-        
+
         table_cell_evidence_dist[nr_of_cells] += 1
         sent_evidence_dist[nr_of_sents] += 1
 
@@ -97,7 +113,7 @@ def main():
                     nr_of_sents += 1
                 else:
                     nr_of_other += 1
-            
+
         if nr_of_cells > 0:
             stats["samples_with_table_cell_evidence"] += 1
             stats["dev_samples_with_table_cell_evidence"] += 1
@@ -107,7 +123,7 @@ def main():
         if nr_of_other > 0:
             stats["samples_with_other_evidence"] += 1
             stats["dev_samples_with_other_evidence"] += 1
-        
+
         table_cell_evidence_dist[nr_of_cells] += 1
         sent_evidence_dist[nr_of_sents] += 1
 
@@ -117,18 +133,24 @@ def main():
     if WRITE_TO_FILE:
         table_cell_evidence_dist_file = out_dir + "/table_cell_evidence_dist.json"
         store_json(table_cell_evidence_dist, table_cell_evidence_dist_file)
-        print("Stored table cell evidence distribution in '{}'".format(table_cell_evidence_dist_file))
+        print(
+            "Stored table cell evidence distribution in '{}'".format(
+                table_cell_evidence_dist_file
+            )
+        )
 
         sent_evidence_dist_file = out_dir + "/sent_evidence_dist.json"
         store_json(sent_evidence_dist, sent_evidence_dist_file)
-        print("Stored sentence evidence distribution in '{}'".format(sent_evidence_dist_file))
+        print(
+            "Stored sentence evidence distribution in '{}'".format(
+                sent_evidence_dist_file
+            )
+        )
 
         stats_file = out_dir + "/stats.json"
         store_json(stats, stats_file, sort_keys=True)
         print("Stored stats in '{}'".format(stats_file))
 
-    
 
 if __name__ == "__main__":
     main()
-

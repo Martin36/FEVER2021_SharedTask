@@ -29,6 +29,7 @@ from utils.wiki_page import WikiPage
 
 MAX_SEQ_LENGTH = 512
 
+
 def create_interaction_protos(doc_tables_dict):
     # Convert the tables to proto format
     interactions = []
@@ -38,22 +39,22 @@ def create_interaction_protos(doc_tables_dict):
             interaction = interaction_pb2.Interaction()
 
             question = interaction.questions.add()
-            question.original_text = ''
-            question.text = ''
-            question.id = 'FAKE'
+            question.original_text = ""
+            question.text = ""
+            question.id = "FAKE"
 
             table_proto = interaction_pb2.Table()
-            for header in table_dict['header']:
+            for header in table_dict["header"]:
                 table_proto.columns.add().text = header
-            
-            for row in table_dict['rows']:
+
+            for row in table_dict["rows"]:
                 new_row = table_proto.rows.add()
                 for cell in row:
                     new_row.cells.add().text = cell
 
             table_proto.document_title = doc_name
 
-            table_proto.table_id = "{}_{}".format(doc_name, i)  
+            table_proto.table_id = "{}_{}".format(doc_name, i)
             interaction.table.CopyFrom(table_proto)
 
             interactions.append(interaction)
@@ -68,7 +69,7 @@ def store_tables_and_interactions(claim, interactions, output_dir):
     cell_trim_length = -1
     use_document_title = True
 
-    config=tf_example_utils.RetrievalConversionConfig(
+    config = tf_example_utils.RetrievalConversionConfig(
         vocab_file=vocab_file,
         max_seq_length=MAX_SEQ_LENGTH,
         max_column_id=max_column_id,
@@ -78,18 +79,17 @@ def store_tables_and_interactions(claim, interactions, output_dir):
         use_document_title=use_document_title,
     )
 
-    input_converter = tf_example_utils.ToRetrievalTensorflowExample(
-        config)
-    
-    index = 0   # This refers to the index of the question to be converted
-    table_filename = 'data/temp_tables.tfrecord'
+    input_converter = tf_example_utils.ToRetrievalTensorflowExample(config)
+
+    index = 0  # This refers to the index of the question to be converted
+    table_filename = "data/temp_tables.tfrecord"
     with tf.io.TFRecordWriter(table_filename) as writer:
         for interaction in interactions:
-            interaction_record = input_converter.convert(interaction, index, 
-                negative_example=None)
+            interaction_record = input_converter.convert(
+                interaction, index, negative_example=None
+            )
             serialized_interaction_record = interaction_record.SerializeToString()
             writer.write(serialized_interaction_record)
-
 
     # This interaction will be passed to the convert function
     interaction = interaction_pb2.Interaction()
@@ -99,7 +99,7 @@ def store_tables_and_interactions(claim, interactions, output_dir):
     interaction.id = "id"
     # Just take a random table out of the interactions
     # This is to satisfy the gold label requirement in the KNN calc
-    table = interactions[random.randint(0, len(interactions)-1)].table
+    table = interactions[random.randint(0, len(interactions) - 1)].table
     interaction.table.CopyFrom(table)
     interaction.questions.append(question)
 
@@ -107,8 +107,7 @@ def store_tables_and_interactions(claim, interactions, output_dir):
 
     # It seems like the imput to this should be a Interaction proto obj
     # It returns a tf.train.Example
-    input_example = input_converter.convert(interaction, index, 
-        negative_example=None)
+    input_example = input_converter.convert(interaction, index, negative_example=None)
     serialized_input_example = input_example.SerializeToString()
 
     # Write the example to a tfrecord, which may seem unnecessary
@@ -118,6 +117,7 @@ def store_tables_and_interactions(claim, interactions, output_dir):
         writer.write(serialized_input_example)
 
     return table_filename, claim_filename
+
 
 def get_estimator(bert_config_file):
     bert_config = modeling.BertConfig.from_json_file(bert_config_file)
@@ -157,20 +157,23 @@ def get_estimator(bert_config_file):
         tpu_config=tf.estimator.tpu.TPUConfig(
             iterations_per_loop=1000,
             num_shards=None,
-            per_host_input_for_training=is_per_host))
-    
+            per_host_input_for_training=is_per_host,
+        ),
+    )
+
     estimator = tf.estimator.tpu.TPUEstimator(
         params={
             "gradient_accumulation_steps": 1,
             "drop_remainder": None,
-            "max_eval_count": 150000,},
+            "max_eval_count": 150000,
+        },
         use_tpu=None,
         model_fn=model_fn,
         config=run_config,
-        train_batch_size=128 // \
-            1,
+        train_batch_size=128 // 1,
         eval_batch_size=32,
-        predict_batch_size=32)
+        predict_batch_size=32,
+    )
 
     return estimator
 
@@ -186,7 +189,8 @@ def create_table_representations(estimator, table_filename, output_dir):
         max_seq_length=MAX_SEQ_LENGTH,
         compression_type="",
         use_mined_negatives=False,
-        include_id=True)
+        include_id=True,
+    )
 
     result = estimator.predict(input_fn=input_fn)
     # result = estimator.predict(input_fn=input_fn, checkpoint_path=checkpoint_path)
@@ -194,6 +198,7 @@ def create_table_representations(estimator, table_filename, output_dir):
     table_retriever_experiment.write_predictions(result, tables_output_predict_file)
 
     return tables_output_predict_file
+
 
 def create_claim_representations(estimator, claim_filename, output_dir):
     # input_fn for claim
@@ -206,7 +211,8 @@ def create_claim_representations(estimator, claim_filename, output_dir):
         max_seq_length=MAX_SEQ_LENGTH,
         compression_type="",
         use_mined_negatives=False,
-        include_id=True)
+        include_id=True,
+    )
 
     result = estimator.predict(input_fn=input_fn)
     # result = estimator.predict(input_fn=input_fn, checkpoint_path=checkpoint_path)
@@ -225,22 +231,25 @@ def create_knn(claim_output_predict_file, tables_output_predict_file, output_dir
         prediction_files_local,
         prediction_files_global,
         make_tables_unique=True,
-        retrieval_results_file_path=retrieval_results_file_path)
-    
+        retrieval_results_file_path=retrieval_results_file_path,
+    )
+
     return retrieval_results_file_path
+
 
 def get_top_k_tables(retrieval_results_file_path, nr_tables_to_retrieve):
     # Get the ids for the top k tables
     with open(retrieval_results_file_path) as f:
         knn = json.loads(f.read())
         knn["table_scores"] = knn["table_scores"][:nr_tables_to_retrieve]
-        knn["table_ids"] = [table_score["table_id"] for table_score in knn["table_scores"]]
-    
+        knn["table_ids"] = [
+            table_score["table_id"] for table_score in knn["table_scores"]
+        ]
+
     return knn["table_ids"]
 
 
-def retrieve_tables(db, data, nr_tables_to_retrieve, 
-        output_dir, bert_config_file):
+def retrieve_tables(db, data, nr_tables_to_retrieve, output_dir, bert_config_file):
 
     estimator = get_estimator(bert_config_file)
     result = []
@@ -256,45 +265,65 @@ def retrieve_tables(db, data, nr_tables_to_retrieve,
                 for i in range(len(doc_tables)):
                     table_id = "{}_{}".format(doc_name, i)
                     table_ids.append(table_id)
-            res_obj = {
-                "claim": claim,
-                "table_ids": table_ids
-            }
+            res_obj = {"claim": claim, "table_ids": table_ids}
             result.append(res_obj)
             continue
 
-        table_filename, claim_filename = store_tables_and_interactions(claim, 
-            interactions, output_dir)    
-        claim_output_predict_file = create_claim_representations(estimator, 
-            claim_filename, output_dir)
-        tables_output_predict_file = create_table_representations(estimator, 
-            table_filename, output_dir)
-        retrieval_results_file_path = create_knn(claim_output_predict_file, 
-            tables_output_predict_file, output_dir)
-        table_ids = get_top_k_tables(retrieval_results_file_path, 
-            nr_tables_to_retrieve)
-        
-        res_obj = {
-            "claim": claim,
-            "table_ids": table_ids
-        }
+        table_filename, claim_filename = store_tables_and_interactions(
+            claim, interactions, output_dir
+        )
+        claim_output_predict_file = create_claim_representations(
+            estimator, claim_filename, output_dir
+        )
+        tables_output_predict_file = create_table_representations(
+            estimator, table_filename, output_dir
+        )
+        retrieval_results_file_path = create_knn(
+            claim_output_predict_file, tables_output_predict_file, output_dir
+        )
+        table_ids = get_top_k_tables(retrieval_results_file_path, nr_tables_to_retrieve)
+
+        res_obj = {"claim": claim, "table_ids": table_ids}
         result.append(res_obj)
-    
+
     return result
 
 
 def main():
     """ Note: This script should use an already trained tapas model """
-    parser = argparse.ArgumentParser(description="Retrives the most relevant tables from the previously retrieved documents")
-    parser.add_argument("--db_path", default=None, type=str, help="Path to the FEVEROUS database")
-    parser.add_argument("--bert_config_file", default=None, type=str, help="Path to the bert config file")
-    parser.add_argument("--init_checkpoint", default=None, type=str, help="Path to the bert config file")
-    parser.add_argument("--model_dir", default=None, type=str, help="Path to the bert config file")
-    parser.add_argument("--output_dir", default=None, type=str, help="Path to the output folder for the model")
-    parser.add_argument("--top_docs_file", default=None, type=str, help="Path to the file containing the top docs for each claim")
+    parser = argparse.ArgumentParser(
+        description="Retrives the most relevant tables from the previously retrieved documents"
+    )
+    parser.add_argument(
+        "--db_path", default=None, type=str, help="Path to the FEVEROUS database"
+    )
+    parser.add_argument(
+        "--bert_config_file",
+        default=None,
+        type=str,
+        help="Path to the bert config file",
+    )
+    parser.add_argument(
+        "--init_checkpoint", default=None, type=str, help="Path to the bert config file"
+    )
+    parser.add_argument(
+        "--model_dir", default=None, type=str, help="Path to the bert config file"
+    )
+    parser.add_argument(
+        "--output_dir",
+        default=None,
+        type=str,
+        help="Path to the output folder for the model",
+    )
+    parser.add_argument(
+        "--top_docs_file",
+        default=None,
+        type=str,
+        help="Path to the file containing the top docs for each claim",
+    )
 
     args = parser.parse_args()
-    
+
     if not args.db_path:
         raise RuntimeError("Invalid database path")
     if ".db" not in args.db_path:
@@ -302,11 +331,15 @@ def main():
     if not args.bert_config_file:
         raise RuntimeError("Invalid bert config file")
     if ".json" not in args.bert_config_file:
-        raise RuntimeError("The bert config file should include the name of the .json file")
+        raise RuntimeError(
+            "The bert config file should include the name of the .json file"
+        )
     if not args.init_checkpoint:
         raise RuntimeError("Invalid init checkpoint path")
     if ".ckpt" not in args.init_checkpoint:
-        raise RuntimeError("The init checkpoint path should include the name of the .ckpt file")
+        raise RuntimeError(
+            "The init checkpoint path should include the name of the .ckpt file"
+        )
     if not args.model_dir:
         raise RuntimeError("Invalid model dir path")
     if not args.output_dir:
@@ -314,7 +347,9 @@ def main():
     if not args.top_docs_file:
         raise RuntimeError("Invalid top docs file path")
     if ".jsonl" not in args.top_docs_file:
-        raise RuntimeError("The top docs file path should include the name of the .jsonl file")
+        raise RuntimeError(
+            "The top docs file path should include the name of the .jsonl file"
+        )
 
     output_dir = os.path.dirname(args.output_dir)
     if not os.path.exists(output_dir):
@@ -324,16 +359,15 @@ def main():
     db = FeverousDB(args.db_path)
     data = load_jsonl(args.top_docs_file)
     nr_tables_to_retrieve = 5
-    
-    table_objs = retrieve_tables(db, data, nr_tables_to_retrieve,
-        output_dir, args.bert_config_file)
+
+    table_objs = retrieve_tables(
+        db, data, nr_tables_to_retrieve, output_dir, args.bert_config_file
+    )
 
     output_file = output_dir + "/top_{}_tables.jsonl".format(nr_tables_to_retrieve)
     store_jsonl(table_objs, output_file)
     print("Stored top tables in '{}'".format(output_file))
 
 
-
 if __name__ == "__main__":
     main()
-

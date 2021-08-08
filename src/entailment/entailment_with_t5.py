@@ -12,10 +12,11 @@ tokenizer = T5Tokenizer.from_pretrained("t5-small")
 MNLI_TO_FEVER_MAP = {
     "▁entailment": "SUPPORTS",
     "▁neutral": "NOT ENOUGH INFO",
-    "▁contradiction": "REFUTES"
+    "▁contradiction": "REFUTES",
 }
 
 stats = defaultdict(int)
+
 
 def predict_veracity(claim, evidence):
     # task = "rte"
@@ -25,13 +26,14 @@ def predict_veracity(claim, evidence):
     if task == "rte":
         input_str = "{} sentence1: {} sentence2: {}".format(task, claim, evidence)
 
-    input_ids = tokenizer(input_str, return_tensors='pt').input_ids
+    input_ids = tokenizer(input_str, return_tensors="pt").input_ids
 
     result = model.generate(input_ids)
     result = torch.squeeze(result)
     target = tokenizer.convert_ids_to_tokens(result, skip_special_tokens=True)
 
     return target
+
 
 def get_veracity_label(claim, evidence):
     predicted_label = predict_veracity(claim, evidence)
@@ -40,7 +42,7 @@ def get_veracity_label(claim, evidence):
         return "NOT ENOUGH INFO"
     else:
         return MNLI_TO_FEVER_MAP[predicted_label]
-    
+
 
 def test_model(data):
     num_correct = 0
@@ -59,7 +61,7 @@ def test_model(data):
                 stats["nr_of_correct_{}_samples".format(label)] += 1
                 num_correct += 1
         else:
-            if label ==  MNLI_TO_FEVER_MAP[predicted_label]:
+            if label == MNLI_TO_FEVER_MAP[predicted_label]:
                 stats["nr_of_correct_{}_samples".format(label)] += 1
                 num_correct += 1
         counter += 1
@@ -69,10 +71,21 @@ def test_model(data):
     print()
     print("========== STATS ============")
     for label in MNLI_TO_FEVER_MAP.values():
-        print("Nr of {} samples: {}".format(label, stats["nr_of_{}_samples".format(label)]))
-        print("Nr of correct {} samples: {}".format(label, stats["nr_of_correct_{}_samples".format(label)]))
+        print(
+            "Nr of {} samples: {}".format(
+                label, stats["nr_of_{}_samples".format(label)]
+            )
+        )
+        print(
+            "Nr of correct {} samples: {}".format(
+                label, stats["nr_of_correct_{}_samples".format(label)]
+            )
+        )
         if stats["nr_of_{}_samples".format(label)] > 0:
-            amount_correct = stats["nr_of_correct_{}_samples".format(label)] / stats["nr_of_{}_samples".format(label)]
+            amount_correct = (
+                stats["nr_of_correct_{}_samples".format(label)]
+                / stats["nr_of_{}_samples".format(label)]
+            )
         else:
             amount_correct = 1.0
         print("Amount of correct {} samples: {}".format(label, amount_correct))
@@ -80,10 +93,16 @@ def test_model(data):
     print("=============================")
 
 
-
 def main():
-    parser = argparse.ArgumentParser(description="Extracts the text from the feverous db and creates a corpus")
-    parser.add_argument("--train_data_path", default=None, type=str, help="Path to the file containing the training data")
+    parser = argparse.ArgumentParser(
+        description="Extracts the text from the feverous db and creates a corpus"
+    )
+    parser.add_argument(
+        "--train_data_path",
+        default=None,
+        type=str,
+        help="Path to the file containing the training data",
+    )
 
     args = parser.parse_args()
 
@@ -96,4 +115,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

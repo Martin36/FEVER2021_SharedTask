@@ -21,20 +21,20 @@ sys.path.insert(0, FEVEROUS_PATH)
 from database.feverous_db import FeverousDB
 from utils.wiki_page import WikiPage
 
-nltk.download('stopwords')
+nltk.download("stopwords")
 porter_stemmer = PorterStemmer()
-s_words = set(stopwords.words('english'))
+s_words = set(stopwords.words("english"))
 
 
 def calc_f1(precision: float, recall: float):
-    return 2*((precision*recall)/(precision+recall))
+    return 2 * ((precision * recall) / (precision + recall))
 
 
 def corpus_generator(corpus_path: str):
-    file_paths = glob(corpus_path + '*.json')
+    file_paths = glob(corpus_path + "*.json")
     for f_path in file_paths:
         print("Opening file '{}'".format(f_path))
-        with open(f_path, 'r') as f:
+        with open(f_path, "r") as f:
             docs = json.loads(f.read())
             for key in tqdm(docs):
                 yield docs[key]
@@ -43,35 +43,36 @@ def corpus_generator(corpus_path: str):
 def create_table_dict(table):
 
     table_rows = table.get_rows()
-    rows = [replace_entities(table_row.cell_content) 
-        for table_row in table_rows]
+    rows = [replace_entities(table_row.cell_content) for table_row in table_rows]
     col_names = rows[0]
     rows = rows[1:]
 
     table_dict = {}
-    table_dict['header'] = [name.strip() for name in col_names]
-    table_dict['cell_ids'] = table.get_ids()
-    table_dict['rows'] = rows
-    table_dict['page'] = table.page
+    table_dict["header"] = [name.strip() for name in col_names]
+    table_dict["cell_ids"] = table.get_ids()
+    table_dict["rows"] = rows
+    table_dict["page"] = table.page
 
     # Keep only rows that have the same nr of columns as the header
     # This is probably not needed, but since it works now, this stays so nothing breaks
     # TODO: Figure out if this is really needed
-    table_dict['rows'] = [row for row in table_dict['rows'] if len(row) == len(table_dict['header'])]
-    
+    table_dict["rows"] = [
+        row for row in table_dict["rows"] if len(row) == len(table_dict["header"])
+    ]
+
     return table_dict
 
 
 def extract_sents(doc_json):
-    page = WikiPage(doc_json['title'], doc_json)
+    page = WikiPage(doc_json["title"], doc_json)
     sents = [replace_entities(sent.content) for sent in page.get_sentences()]
     sents = [sent.lower() for sent in sents]
     return sents
 
 
 def get_tables_from_docs(db: FeverousDB, doc_names: "list[str]"):
-    """ 
-        Takes a list of document names and returns a dict with 
+    """
+        Takes a list of document names and returns a dict with
         a list of tables for each document
     """
     result = {}
@@ -103,8 +104,12 @@ def load_jsonl(path: str):
     return result
 
 
-def store_json(data: Union[dict, defaultdict, OrderedDict], 
-    file_path: str, sort_keys=False, indent=None):
+def store_json(
+    data: Union[dict, defaultdict, OrderedDict],
+    file_path: str,
+    sort_keys=False,
+    indent=None,
+):
     """ Function for storing a dict to a json file
 
         Parameters
@@ -119,12 +124,11 @@ def store_json(data: Union[dict, defaultdict, OrderedDict],
             Set this if indentation should be added (default: None)
     """
 
-    if type(data) != dict and type(data) != defaultdict \
-       and type(data) != OrderedDict:
+    if type(data) != dict and type(data) != defaultdict and type(data) != OrderedDict:
         raise ArgumentTypeError("'data' needs to be a dict")
     if ".json" not in file_path:
         raise ArgumentError("'file_path' needs to include the name of the output file")
-    with open(file_path, mode='w') as f:
+    with open(file_path, mode="w") as f:
         f.write(json.dumps(data, sort_keys=sort_keys, indent=indent))
 
 
@@ -133,7 +137,7 @@ def store_jsonl(data: list, file_path: str):
         raise ArgumentTypeError("'data' needs to be a list")
     if ".jsonl" not in file_path:
         raise ArgumentError("'file_path' needs to include the name of the output file")
-    with jsonlines.open(file_path, mode='w') as f:
+    with jsonlines.open(file_path, mode="w") as f:
         for d in data:
             f.write(d)
 
@@ -141,28 +145,29 @@ def store_jsonl(data: list, file_path: str):
 def replace_entities(sent):
     if not sent:
         return sent
-    
-    regex = r'\[\[([^\|]+)\|([^\]]+)\]\]'
+
+    regex = r"\[\[([^\|]+)\|([^\]]+)\]\]"
 
     if type(sent) == list:
-        return [re.sub(regex, '\\2', s) for s in sent]
+        return [re.sub(regex, "\\2", s) for s in sent]
     else:
-        return re.sub(regex, '\\2', sent)
-  
+        return re.sub(regex, "\\2", sent)
+
+
 def remove_header_tokens(string):
     regex = r"\[H\]"
     return re.sub(regex, "", string)
 
+
 def remove_punctuation(sent):
-    if sent[-1] == '.':
+    if sent[-1] == ".":
         return sent[:-1]
     else:
         return sent
 
+
 def stemming_tokenizer(str_input):
     words = re.sub(r"[^A-Za-z0-9\-]", " ", str_input).lower().split()
-    words = [word for word in words if word not in s_words]    
+    words = [word for word in words if word not in s_words]
     words = [porter_stemmer.stem(word) for word in words]
     return words
-
-

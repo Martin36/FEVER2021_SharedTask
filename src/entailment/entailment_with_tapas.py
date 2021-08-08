@@ -11,8 +11,9 @@ from util.datasets import collate_fn, TableDataset
 
 torch.autograd.set_detect_anomaly(True)
 
+
 def train_model(train_dataloader, device, model_path, tapas_model_name):
-    config = TapasConfig.from_pretrained('{}-finetuned-wtq'.format(tapas_model_name))
+    config = TapasConfig.from_pretrained("{}-finetuned-wtq".format(tapas_model_name))
     model = TapasForQuestionAnswering.from_pretrained(tapas_model_name, config=config)
     optimizer = AdamW(model.parameters(), lr=5e-5)
     model.to(device)
@@ -32,9 +33,15 @@ def train_model(train_dataloader, device, model_path, tapas_model_name):
             # zero the parameter gradients
             optimizer.zero_grad()
             # forward + backward + optimize
-            outputs = model(input_ids=input_ids, attention_mask=attention_mask, token_type_ids=token_type_ids,
-                           labels=labels, numeric_values=numeric_values, numeric_values_scale=numeric_values_scale,
-                           float_answer=float_answer)
+            outputs = model(
+                input_ids=input_ids,
+                attention_mask=attention_mask,
+                token_type_ids=token_type_ids,
+                labels=labels,
+                numeric_values=numeric_values,
+                numeric_values_scale=numeric_values_scale,
+                float_answer=float_answer,
+            )
             loss = outputs.loss
             print("Loss: {}".format(loss))
             loss.backward()
@@ -44,18 +51,42 @@ def train_model(train_dataloader, device, model_path, tapas_model_name):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Trains the tapas model used for representing tables in the entailment prediction model")
-    parser.add_argument("--train_csv_path", default=None, type=str, help="Path to the csv file containing the training examples")
-    parser.add_argument("--tapas_model_name", default='google/tapas-base', type=str, help="Name of the pretrained tapas model")
-    parser.add_argument("--model_path", default=None, type=str, help="Path to the output folder for the model")
-    parser.add_argument("--batch_size", default=1, type=int, help="The size of each training batch. Reduce this is you run out of memory")
+    parser = argparse.ArgumentParser(
+        description="Trains the tapas model used for representing tables in the entailment prediction model"
+    )
+    parser.add_argument(
+        "--train_csv_path",
+        default=None,
+        type=str,
+        help="Path to the csv file containing the training examples",
+    )
+    parser.add_argument(
+        "--tapas_model_name",
+        default="google/tapas-base",
+        type=str,
+        help="Name of the pretrained tapas model",
+    )
+    parser.add_argument(
+        "--model_path",
+        default=None,
+        type=str,
+        help="Path to the output folder for the model",
+    )
+    parser.add_argument(
+        "--batch_size",
+        default=1,
+        type=int,
+        help="The size of each training batch. Reduce this is you run out of memory",
+    )
 
     args = parser.parse_args()
 
     if not args.train_csv_path:
         raise RuntimeError("Invalid train csv path")
     if ".csv" not in args.train_csv_path:
-        raise RuntimeError("The train csv path should include the name of the .csv file")
+        raise RuntimeError(
+            "The train csv path should include the name of the .csv file"
+        )
     if not args.model_path:
         raise RuntimeError("Invalid model output path")
 
@@ -66,19 +97,22 @@ def main():
 
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
     tokenizer = TapasTokenizer.from_pretrained(args.tapas_model_name)
-    data = pd.read_csv(args.train_csv_path, converters={
-        "answer_coordinates": ast.literal_eval,
-        "answer_text": ast.literal_eval
-    })
+    data = pd.read_csv(
+        args.train_csv_path,
+        converters={
+            "answer_coordinates": ast.literal_eval,
+            "answer_text": ast.literal_eval,
+        },
+    )
 
     train_dataset = TableDataset(data, tokenizer)
     # train_dataset = nc.SafeDataset(train_dataset)
-    train_dataloader = torch.utils.data.DataLoader(train_dataset, 
-        batch_size=args.batch_size, drop_last=True, collate_fn=collate_fn)
+    train_dataloader = torch.utils.data.DataLoader(
+        train_dataset, batch_size=args.batch_size, drop_last=True, collate_fn=collate_fn
+    )
     train_model(train_dataloader, device, args.model_path, args.tapas_model_name)
     print("Finished training the model")
 
 
 if __name__ == "__main__":
     main()
-

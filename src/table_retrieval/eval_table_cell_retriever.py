@@ -7,6 +7,7 @@ from util.util_funcs import load_jsonl, store_json
 
 stats = defaultdict(int)
 
+
 def evaluate(data, retrieved_cells):
     sum_precision = 0
     sum_recall = 0
@@ -57,15 +58,15 @@ def evaluate(data, retrieved_cells):
             for rel_cell in rel_cells:
                 if cell == rel_cell:
                     nr_of_correct_cells += 1
-        
+
         if len(rel_cells) == 0:
             precision = 100
         else:
-            precision = (nr_of_correct_cells/len(rel_cells))*100
+            precision = (nr_of_correct_cells / len(rel_cells)) * 100
         if len(evidence) == 0:
             recall = 100
         else:
-            recall = (nr_of_correct_cells/len(evidence))*100
+            recall = (nr_of_correct_cells / len(evidence)) * 100
 
         sum_precision += precision
         sum_recall += recall
@@ -74,16 +75,26 @@ def evaluate(data, retrieved_cells):
             sum_precision_tables_only += precision
             sum_recall_tables_only += recall
 
+    precision_tables_only = sum_precision_tables_only / claims_with_table_evidence
+    recall_tables_only = sum_recall_tables_only / claims_with_table_evidence
+    f1_tables_only = 2 * (
+        (precision_tables_only * recall_tables_only)
+        / (precision_tables_only + recall_tables_only)
+    )
+    precision_all = sum_precision / len(data)
+    recall_all = sum_recall / len(data)
+    f1_all = 2 * ((precision_all * recall_all) / (precision_all + recall_all))
 
-    precision_tables_only = sum_precision_tables_only/claims_with_table_evidence
-    recall_tables_only = sum_recall_tables_only/claims_with_table_evidence
-    f1_tables_only = 2*((precision_tables_only*recall_tables_only)/(precision_tables_only+recall_tables_only))
-    precision_all = sum_precision/len(data)
-    recall_all = sum_recall/len(data)
-    f1_all = 2*((precision_all*recall_all)/(precision_all+recall_all))
-    
-    print("Samples with multiple evidence: {}".format(stats["samples_with_multiple_evidence"]))
-    print("Samples without table evidence: {}".format(stats["samples_without_table_evidence"]))
+    print(
+        "Samples with multiple evidence: {}".format(
+            stats["samples_with_multiple_evidence"]
+        )
+    )
+    print(
+        "Samples without table evidence: {}".format(
+            stats["samples_without_table_evidence"]
+        )
+    )
 
     result_dict = {
         "precision_tables_only": precision_tables_only,
@@ -91,32 +102,55 @@ def evaluate(data, retrieved_cells):
         "f1_tables_only": f1_tables_only,
         "precision_all": precision_all,
         "recall_all": recall_all,
-        "f1_all": f1_all
+        "f1_all": f1_all,
     }
 
     return result_dict
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Evaluates the table cell retriever model")
-    parser.add_argument("--retrieved_cells_file", default=None, type=str, help="Path to the jsonl file containing the retrieved tables cells")
-    parser.add_argument("--data_file", default=None, type=str, help="Path to the jsonl file containing the training or dev data (provided by the FEVEROUS dataset)")
-    parser.add_argument("--out_file", default=None, type=str, help="Path to the json file where the results should be stored")
+    parser = argparse.ArgumentParser(
+        description="Evaluates the table cell retriever model"
+    )
+    parser.add_argument(
+        "--retrieved_cells_file",
+        default=None,
+        type=str,
+        help="Path to the jsonl file containing the retrieved tables cells",
+    )
+    parser.add_argument(
+        "--data_file",
+        default=None,
+        type=str,
+        help="Path to the jsonl file containing the training or dev data (provided by the FEVEROUS dataset)",
+    )
+    parser.add_argument(
+        "--out_file",
+        default=None,
+        type=str,
+        help="Path to the json file where the results should be stored",
+    )
 
     args = parser.parse_args()
 
     if not args.retrieved_cells_file:
         raise RuntimeError("Invalid retrieved cells file path")
     if ".jsonl" not in args.retrieved_cells_file:
-        raise RuntimeError("The retrieved cells file path should include the name of the .jsonl file")
+        raise RuntimeError(
+            "The retrieved cells file path should include the name of the .jsonl file"
+        )
     if not args.data_file:
         raise RuntimeError("Invalid data file path")
     if ".jsonl" not in args.data_file:
-        raise RuntimeError("The data file path should include the name of the .jsonl file")
+        raise RuntimeError(
+            "The data file path should include the name of the .jsonl file"
+        )
     if not args.out_file:
         raise RuntimeError("Invalid out file path")
     if ".json" not in args.out_file:
-        raise RuntimeError("The out file path should include the name of the .json file")
+        raise RuntimeError(
+            "The out file path should include the name of the .json file"
+        )
 
     retrieved_cells = load_jsonl(args.retrieved_cells_file)
     data = load_jsonl(args.data_file)[1:]
@@ -127,7 +161,5 @@ def main():
     print("Stored table retriever evaluation data in '{}'".format(args.out_file))
 
 
-
 if __name__ == "__main__":
     main()
-

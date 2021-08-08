@@ -13,14 +13,21 @@ from feverous_scorer import feverous_score, check_predicted_evidence_format
 
 def main():
     parser = argparse.ArgumentParser(description="Trains the veracity prediction model")
-    parser.add_argument("--input_path", default=None, type=str, help="Path to the csv file containing the evaluation examples")
+    parser.add_argument(
+        "--input_path",
+        default=None,
+        type=str,
+        help="Path to the csv file containing the evaluation examples",
+    )
 
     args = parser.parse_args()
 
     if not args.input_path:
         raise RuntimeError("Invalid in file path")
     if ".jsonl" not in args.input_path:
-        raise RuntimeError("The train csv path should include the name of the .csv file")
+        raise RuntimeError(
+            "The train csv path should include the name of the .csv file"
+        )
 
     data = load_jsonl(args.input_path)
 
@@ -32,7 +39,5 @@ def main():
     print(score)
 
 
-
 if __name__ == "__main__":
     main()
-

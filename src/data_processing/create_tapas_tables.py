@@ -10,29 +10,37 @@ from tqdm import tqdm
 from util.util_funcs import load_jsonl, remove_header_tokens
 
 
-
 MAX_NUM_COLS = 32
 MAX_NUM_ROWS = 64
 MODEL_MAX_LENGTH = 512
+
 
 def get_table_id(cell_id):
     cell_id_split = cell_id.split("_")
     return "_".join([cell_id_split[0], cell_id_split[-3]])
 
-def create_tables(tapas_train_data, out_path, table_out_path, 
-        write_to_files, is_predict=False):
+
+def create_tables(
+    tapas_train_data, out_path, table_out_path, write_to_files, is_predict=False
+):
     counter = 0
     stats = defaultdict(int)
     table_counter = 1
     data_rows = []
 
     if is_predict:
-        column_names = ["id", "claim_id", "question", "table_file",
-             "table_id"]
+        column_names = ["id", "claim_id", "question", "table_file", "table_id"]
     else:
-        column_names = ["id", "claim_id", "annotator", "question", 
-            "table_file", "answer_coordinates", "answer_text", 
-            "float_answer"]
+        column_names = [
+            "id",
+            "claim_id",
+            "annotator",
+            "question",
+            "table_file",
+            "answer_coordinates",
+            "answer_text",
+            "float_answer",
+        ]
 
     for i, data in enumerate(tqdm(tapas_train_data)):
 
@@ -48,8 +56,7 @@ def create_tables(tapas_train_data, out_path, table_out_path,
             # In the prediction phase it is possible to have samples without evidence
             if not is_predict:
                 continue
-            
-        
+
         coords_answer_map = defaultdict(dict)
 
         for j, e in enumerate(data["evidence"]):
@@ -58,15 +65,19 @@ def create_tables(tapas_train_data, out_path, table_out_path,
             e_split = e.split("_")
             table_id = "_".join([e_split[0], e_split[-3]])
             coords = (int(e_split[-2]), int(e_split[-1]))
-            coords_answer_map[table_id][coords] = remove_header_tokens(data["answer_texts"][j]).strip()
+            coords_answer_map[table_id][coords] = remove_header_tokens(
+                data["answer_texts"][j]
+            ).strip()
 
         table_file_names = {}
         has_too_large_tables = False
         evidence_id_out_of_range = False
         for d in data["table_dicts"]:
-            if len(d["header"]) > MAX_NUM_COLS or \
-               len(d["rows"])+len(d["header"]) > MAX_NUM_ROWS or \
-               len(d["header"])*(len(d["rows"])+1) > MODEL_MAX_LENGTH:
+            if (
+                len(d["header"]) > MAX_NUM_COLS
+                or len(d["rows"]) + len(d["header"]) > MAX_NUM_ROWS
+                or len(d["header"]) * (len(d["rows"]) + 1) > MODEL_MAX_LENGTH
+            ):
                 has_too_large_tables = True
                 break
 
@@ -81,29 +92,29 @@ def create_tables(tapas_train_data, out_path, table_out_path,
             for row in d["rows"]:
                 rows.append(row)
 
-            # Since the table cell numbers are not exactly the same as their 
+            # Since the table cell numbers are not exactly the same as their
             # col and row number, some evidence ids may go "out of" the table
             # Therefore we need to check this in order to not get errors when
-            # training the model. 
+            # training the model.
             # TODO: Solve the ID problem so this part will not be needed
             evidence_id_out_of_range = False
             for e in data["evidence"]:
                 e_split = e.split("_")
-                if e_split[0] == page_name and e_split[-3] == table_idx:                   
+                if e_split[0] == page_name and e_split[-3] == table_idx:
                     row_idx = e_split[-2]
                     col_idx = e_split[-1]
                     if int(row_idx) >= len(rows) or int(col_idx) >= len(d["header"]):
                         evidence_id_out_of_range = True
                         break
-                        
+
             if evidence_id_out_of_range:
                 break
 
             df = pd.DataFrame(rows, columns=headers)
-            
+
             table_file_name = table_out_path + "table_{}.csv".format(table_counter)
             table_file_names[table_id] = table_file_name
-            
+
             if write_to_files:
                 df.to_csv(table_file_name)
 
@@ -117,36 +128,58 @@ def create_tables(tapas_train_data, out_path, table_out_path,
             stats["too_large_tables"] += 1
             continue
 
-
         if is_predict:
             # ["id", "claim_id", "question", "table_file", "table_id"]
             for table_id in table_file_names:
-                data_row = [i, data["id"], data["claim"], 
-                    table_file_names[table_id], table_id]
+                data_row = [
+                    i,
+                    data["id"],
+                    data["claim"],
+                    table_file_names[table_id],
+                    table_id,
+                ]
                 data_rows.append(data_row)
                 counter += 1
         else:
             # TODO: How to handle the case with multiple tables?
             # For now, use the table that has the most table cells from the evidence
-            table_index = max(coords_answer_map, key=lambda x: len(coords_answer_map[x].keys()))
+            table_index = max(
+                coords_answer_map, key=lambda x: len(coords_answer_map[x].keys())
+            )
             answer_coords = list(coords_answer_map[table_index].keys())
-            
+
             assert table_index is not None and answer_coords is not None
 
-            answer_texts = [coords_answer_map[table_index][coords] for coords in answer_coords]
-            data_row = [i, data["id"], None, data["claim"], table_file_names[table_index],
-                answer_coords, answer_texts, np.nan]
+            answer_texts = [
+                coords_answer_map[table_index][coords] for coords in answer_coords
+            ]
+            data_row = [
+                i,
+                data["id"],
+                None,
+                data["claim"],
+                table_file_names[table_index],
+                answer_coords,
+                answer_texts,
+                np.nan,
+            ]
             data_rows.append(data_row)
             counter += 1
 
-    print("{} valid train samples out of {}".format(len(data_rows), len(tapas_train_data)))
+    print(
+        "{} valid train samples out of {}".format(len(data_rows), len(tapas_train_data))
+    )
     print("{} samples have no tables".format(stats["has_no_tables"]))
     print("{} samples have no evidence".format(stats["has_no_evidence"]))
     print("{} samples have too large tables".format(stats["too_large_tables"]))
-    print("{} samples have indicies outside of the table dimensions".format(stats["evidence_id_out_of_range"]))
-    
+    print(
+        "{} samples have indicies outside of the table dimensions".format(
+            stats["evidence_id_out_of_range"]
+        )
+    )
+
     df = pd.DataFrame(data_rows, columns=column_names)
-    
+
     result_file = out_path + "tapas_data.csv"
     if write_to_files:
         df.to_csv(result_file)
@@ -154,21 +187,49 @@ def create_tables(tapas_train_data, out_path, table_out_path,
     return result_file
 
 
-
 def main():
-    parser = argparse.ArgumentParser(description="Converts the tapas data to the appropriate csv format for the pytorch model")
-    parser.add_argument("--tapas_train_path", default=None, type=str, help="Path to the tapas train data")
-    parser.add_argument("--out_path", default=None, type=str, help="Path to the output folder, where the top k documents should be stored")
-    parser.add_argument("--table_out_path", default=None, type=str, help="Path to the output folder, where the top k documents should be stored")
-    parser.add_argument("--write_to_files", default=False, type=bool, help="Should the tables be written to files?")
-    parser.add_argument("--is_predict", default=False, action="store_true", help="Tells the script if it should use table content when matching")
+    parser = argparse.ArgumentParser(
+        description="Converts the tapas data to the appropriate csv format for the pytorch model"
+    )
+    parser.add_argument(
+        "--tapas_train_path",
+        default=None,
+        type=str,
+        help="Path to the tapas train data",
+    )
+    parser.add_argument(
+        "--out_path",
+        default=None,
+        type=str,
+        help="Path to the output folder, where the top k documents should be stored",
+    )
+    parser.add_argument(
+        "--table_out_path",
+        default=None,
+        type=str,
+        help="Path to the output folder, where the top k documents should be stored",
+    )
+    parser.add_argument(
+        "--write_to_files",
+        default=False,
+        type=bool,
+        help="Should the tables be written to files?",
+    )
+    parser.add_argument(
+        "--is_predict",
+        default=False,
+        action="store_true",
+        help="Tells the script if it should use table content when matching",
+    )
 
     args = parser.parse_args()
 
     if not args.tapas_train_path:
         raise RuntimeError("Invalid tapas train data path")
     if ".jsonl" not in args.tapas_train_path:
-        raise RuntimeError("The tapas train data path should include the name of the .jsonl file")
+        raise RuntimeError(
+            "The tapas train data path should include the name of the .jsonl file"
+        )
     if not args.out_path:
         raise RuntimeError("Invalid output path")
     if not args.table_out_path:
@@ -184,7 +245,11 @@ def main():
         print("Table output directory doesn't exist. Creating {}".format(table_dir))
         os.makedirs(table_dir)
     elif args.write_to_files:
-        print("Table output directory '{}' already exists. All files in this directory will be deleted".format(table_dir))
+        print(
+            "Table output directory '{}' already exists. All files in this directory will be deleted".format(
+                table_dir
+            )
+        )
         val = input("Are you sure you want to proceed? (y/n): ")
         if val == "y":
             shutil.rmtree(table_dir)
@@ -195,11 +260,15 @@ def main():
     tapas_train_data = load_jsonl(args.tapas_train_path)
 
     print("Creating tapas tables on the SQA format...")
-    create_tables(tapas_train_data, args.out_path, args.table_out_path,
-        args.write_to_files, is_predict=args.is_predict)
+    create_tables(
+        tapas_train_data,
+        args.out_path,
+        args.table_out_path,
+        args.write_to_files,
+        is_predict=args.is_predict,
+    )
     print("Finished creating tapas tables")
 
 
 if __name__ == "__main__":
     main()
-

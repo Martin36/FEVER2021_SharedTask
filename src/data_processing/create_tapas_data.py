@@ -18,59 +18,61 @@ from utils.wiki_page import WikiPage
 
 
 def get_answer_texts(db, data):
-    evidence_list = data['evidence'][0]['content']
-    evidence_list = [evidence for evidence in evidence_list if '_cell_' in evidence]
-    
+    evidence_list = data["evidence"][0]["content"]
+    evidence_list = [evidence for evidence in evidence_list if "_cell_" in evidence]
+
     if len(evidence_list) == 0:
         return []
-    
-    doc_name = unicodedata.normalize('NFD', evidence_list[0].split('_')[0])
+
+    doc_name = unicodedata.normalize("NFD", evidence_list[0].split("_")[0])
     doc_json = db.get_doc_json(doc_name)
     page = WikiPage(doc_name, doc_json)
 
     answer_texts = []
-    
+
     for evidence in evidence_list:
-        if '_cell_' not in evidence: 
+        if "_cell_" not in evidence:
             continue
 
-        evidence_doc_name = unicodedata.normalize('NFD', evidence.split('_')[0])
+        evidence_doc_name = unicodedata.normalize("NFD", evidence.split("_")[0])
         if doc_name != evidence_doc_name:
             doc_name = evidence_doc_name
             doc_json = db.get_doc_json(doc_name)
             page = WikiPage(doc_name, doc_json)
 
-        cell_id = "_".join(evidence.split('_')[1:])            
+        cell_id = "_".join(evidence.split("_")[1:])
         cell_content = replace_entities(page.get_cell_content(cell_id))
         answer_texts.append(cell_content)
-    
+
     return answer_texts
-    
+
 
 def convert_to_tapas_format(db, data):
-    evidence_list = data['evidence'][0]['content']
+    evidence_list = data["evidence"][0]["content"]
     # TODO: The evidence could actually come from several document, how to handle that?
-    document_title = evidence_list[0].split('_')[0]
+    document_title = evidence_list[0].split("_")[0]
 
     result_dict = {}
-    result_dict['id'] = data['id']
-    result_dict['claim'] = data['claim']
-    result_dict['label'] = data['label']
-    result_dict['document_title'] = document_title
-    result_dict['evidence'] = [evidence for evidence in evidence_list if '_cell_' in evidence]
-        
+    result_dict["id"] = data["id"]
+    result_dict["claim"] = data["claim"]
+    result_dict["label"] = data["label"]
+    result_dict["document_title"] = document_title
+    result_dict["evidence"] = [
+        evidence for evidence in evidence_list if "_cell_" in evidence
+    ]
+
     has_tables = False
     doc_names = []
     for evidence_id in evidence_list:
-        doc_name = evidence_id.split('_')[0]
-        if '_cell_' in evidence_id or 'table_caption' in evidence_id:
+        doc_name = evidence_id.split("_")[0]
+        if "_cell_" in evidence_id or "table_caption" in evidence_id:
             has_tables = True
             doc_names.append(doc_name)
 
-    result_dict['has_tables'] = has_tables
+    result_dict["has_tables"] = has_tables
 
     doc_names = set(doc_names)
-    result_dict['table_dicts'] = []
+    result_dict["table_dicts"] = []
     if has_tables:
         for doc_name in doc_names:
             doc_json = db.get_doc_json(doc_name)
@@ -80,10 +82,10 @@ def convert_to_tapas_format(db, data):
             tables = page.get_tables()
             for table in tables:
                 table_dict = create_table_dict(table)
-                result_dict['table_dicts'].append(table_dict)
-    
-    result_dict['answer_texts'] = get_answer_texts(db, data)
-    
+                result_dict["table_dicts"].append(table_dict)
+
+    result_dict["answer_texts"] = get_answer_texts(db, data)
+
     return result_dict
 
 
@@ -94,25 +96,33 @@ def create_tapas_data(db, train_data):
         if not data:
             print("Skipping train example {}".format(i))
         else:
-            if None in data['answer_texts']:
+            if None in data["answer_texts"]:
                 print("Train sample {} has None type answer texts".format(i))
             tapas_data.append(data)
     return tapas_data
 
+
 def store_tapas_data(tapas_data, out_path):
     print("Storing tapas data...")
-    with jsonlines.open(out_path + "tapas_train.jsonl", mode='w') as f:
+    with jsonlines.open(out_path + "tapas_train.jsonl", mode="w") as f:
         for d in tapas_data:
             f.write(d)
     print("Finished storing tapas data")
 
 
-
 def main():
-    parser = argparse.ArgumentParser(description="Converts the given dataset to the correct format for tapas")
-    parser.add_argument("--db_path", default=None, type=str, help="Path to the FEVEROUS database")
-    parser.add_argument("--train_data_path", default=None, type=str, help="Path to the train data")
-    parser.add_argument("--out_path", default=None, type=str, help="Path to the output folder")
+    parser = argparse.ArgumentParser(
+        description="Converts the given dataset to the correct format for tapas"
+    )
+    parser.add_argument(
+        "--db_path", default=None, type=str, help="Path to the FEVEROUS database"
+    )
+    parser.add_argument(
+        "--train_data_path", default=None, type=str, help="Path to the train data"
+    )
+    parser.add_argument(
+        "--out_path", default=None, type=str, help="Path to the output folder"
+    )
 
     args = parser.parse_args()
 
@@ -123,7 +133,9 @@ def main():
     if not args.train_data_path:
         raise RuntimeError("Invalid train data path")
     if ".jsonl" not in args.train_data_path:
-        raise RuntimeError("The train data path should include the name of the .jsonl file")
+        raise RuntimeError(
+            "The train data path should include the name of the .jsonl file"
+        )
     if not args.out_path:
         raise RuntimeError("Invalid output path")
 
@@ -136,7 +148,7 @@ def main():
 
     train_data = load_jsonl(args.train_data_path)
     train_data = train_data[1:]
-    
+
     print("Creating tapas data...")
     tapas_data = create_tapas_data(db, train_data)
     print("Finished creating tapas data")

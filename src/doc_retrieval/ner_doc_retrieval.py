@@ -20,8 +20,13 @@ def create_ner_tagged_doc_ids(nlp, doc_ids):
         spacy_res = nlp(doc_id)
         tagged_id = doc_id
         for ent in spacy_res.ents:
-            tagged_id = doc_id[:ent.start_char] + f"<{ent.label_}>" + doc_id[ent.start_char:ent.end_char] + f"<{ent.label_}>" + doc_id[ent.end_char:]
-
+            tagged_id = (
+                doc_id[: ent.start_char]
+                + f"<{ent.label_}>"
+                + doc_id[ent.start_char : ent.end_char]
+                + f"<{ent.label_}>"
+                + doc_id[ent.end_char :]
+            )
 
 
 def main():
@@ -29,14 +34,25 @@ def main():
         Retrieves documents using spaCy's NER tagger to compare
         claims and titles of documents
 
-        The accuracy here is considered as the nr of examples 
+        The accuracy here is considered as the nr of examples
         where all the relevant documents were retrieved
     """
 
-    parser = argparse.ArgumentParser(description="Calculates the accuracy of the document retrieval results")
-    parser.add_argument("--db_path", default=None, type=str, help="Path to the FEVEROUS database")
-    parser.add_argument("--data_path", default=None, type=str, help="Path to the train data")
-    parser.add_argument("--out_file", default=None, type=str, help="Path to the file to store the results")
+    parser = argparse.ArgumentParser(
+        description="Calculates the accuracy of the document retrieval results"
+    )
+    parser.add_argument(
+        "--db_path", default=None, type=str, help="Path to the FEVEROUS database"
+    )
+    parser.add_argument(
+        "--data_path", default=None, type=str, help="Path to the train data"
+    )
+    parser.add_argument(
+        "--out_file",
+        default=None,
+        type=str,
+        help="Path to the file to store the results",
+    )
 
     args = parser.parse_args()
 
@@ -51,8 +67,9 @@ def main():
     if not args.out_file:
         raise RuntimeError("Invalid out file path")
     if ".json" not in args.out_file:
-        raise RuntimeError("The out file path should include the name of the .json file")
-
+        raise RuntimeError(
+            "The out file path should include the name of the .json file"
+        )
 
     db = FeverousDB(args.db_path)
     doc_ids = db.get_doc_ids()
@@ -60,7 +77,6 @@ def main():
     nlp = spacy.load("en_core_web_sm")
 
     create_ner_tagged_doc_ids(nlp, doc_ids)
-
 
 
 if __name__ == "__main__":
