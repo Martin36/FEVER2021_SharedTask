@@ -21,6 +21,7 @@ def calculate_accuracy(related_docs, train_data):
     sum_recall = 0
     for i in tqdm(range(len(train_data))):
         evidence_docs = get_evidence_docs(train_data[i])
+        assert train_data[i]["claim"] == related_docs[i]["claim"]
         nr_of_correct_samples += 1
         nr_correct_for_current = 0
         any_match = False
@@ -45,7 +46,10 @@ def calculate_accuracy(related_docs, train_data):
             }
             stats["no_match_objs"].append(no_match_obj)
 
-        curr_precision = nr_correct_for_current / len(related_docs[i]["docs"])
+        if len(related_docs[i]["docs"]) == 0:
+            curr_precision = 1
+        else:
+            curr_precision = nr_correct_for_current / len(related_docs[i]["docs"])
         curr_recall = nr_correct_for_current / len(evidence_docs)
         sum_precision += curr_precision
         sum_recall += curr_recall
@@ -106,7 +110,7 @@ def main():
             "The out file path should include the name of the .json file"
         )
 
-    data = load_jsonl(args.train_data_path)[1:]
+    data = load_jsonl(args.data_path)[1:]
     related_docs = load_jsonl(args.top_k_docs_path)
     accuracy, precision, recall, f1 = calculate_accuracy(related_docs, data)
     print("Accuracy for top k docs is: {}".format(accuracy))

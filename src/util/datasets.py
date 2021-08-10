@@ -128,3 +128,8 @@ class PredictionDataset(torch.utils.data.Dataset):
 
     def __len__(self):
         return len(self.entailment_data)
+
+
+class LongformerDataset(torch.utils.data.Dataset):
+    def __init__(self) -> None:
+        super().__init__()

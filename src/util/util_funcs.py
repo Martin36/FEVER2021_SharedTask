@@ -1,20 +1,14 @@
 from argparse import ArgumentError, ArgumentTypeError
 from collections import OrderedDict, defaultdict
-import os
-import sys
-from typing import Union
-import jsonlines
-import re
-import nltk
-import json
+import os, sys, re, json, jsonlines, nltk, pickle
 
+from typing import List, Union
 from glob import glob
 from tqdm import tqdm
 from nltk.stem.porter import PorterStemmer
 from nltk.corpus import stopwords
 
 DIR_PATH = os.path.abspath(os.getcwd())
-
 FEVEROUS_PATH = DIR_PATH + "/FEVEROUS/src"
 sys.path.insert(0, FEVEROUS_PATH)
 
@@ -86,6 +80,17 @@ def get_tables_from_docs(db: FeverousDB, doc_names: "list[str]"):
 
 
 def load_json(path: str):
+    """Loads the json file from 'path' into a list of dicts
+
+    Args:
+        path (str): The path to the json file
+
+    Raises:
+        ArgumentError: If the provided path does not point to a json file
+
+    Returns:
+        dict: A dict of the json file
+    """
     data = None
     if not ".json" in path:
         raise ArgumentError("'path' is not pointing to a json file")
@@ -94,7 +99,19 @@ def load_json(path: str):
     return data
 
 
-def load_jsonl(path: str):
+def load_jsonl(path: str) -> List[dict]:
+    """Loads the jsonl file from 'path' into a list of dicts
+
+    Args:
+        path (str): The path to the jsonl file
+
+    Raises:
+        ArgumentError: If the provided path does not point to a jsonl file
+
+    Returns:
+        list: A list of the jsonl file
+    """
+
     if not ".jsonl" in path:
         raise ArgumentError("'path' is not pointing to a jsonl file")
     result = []
@@ -102,6 +119,21 @@ def load_jsonl(path: str):
         for doc in reader:
             result.append(doc)
     return result
+
+
+def load_tfidf(vectorizer_path: str, wm_path: str):
+    """Loads the stored TF-IDF objects
+
+    Args:
+        vectorizer_path (str): Path to the vectorizer .pickle file
+        wm_path (str): Path to the word model .pickle file
+
+    Returns:    # TODO
+        [type]: [description]
+    """
+    tfidfvectorizer = pickle.load(open(vectorizer_path, "rb"))
+    tfidf_wm = pickle.load(open(wm_path, "rb"))
+    return tfidfvectorizer, tfidf_wm
 
 
 def store_json(
@@ -171,3 +203,16 @@ def stemming_tokenizer(str_input):
     words = [word for word in words if word not in s_words]
     words = [porter_stemmer.stem(word) for word in words]
     return words
+
+
+def unique(sequence: list):
+    """Returns all the unique items in the list while keeping order (which set() does not)
+
+    Args:
+        sequence (list): The list to filter
+
+    Returns:
+        list: List with only unique elements
+    """
+    seen = set()
+    return [x for x in sequence if not (x in seen or seen.add(x))]

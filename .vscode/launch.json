@@ -82,39 +82,39 @@
             ],
         },
         {
-            "name": "FEVER: Retrieve documents (Train set)",
+            "name": "FEVER: Retrieve documents (Train)",
             "type": "python",
             "request": "launch",
             "program": "${workspaceFolder}/src/doc_retrieval/document_retrieval.py",
             "console": "integratedTerminal",
             "args":[
                 "--doc_id_map_path=tfidf/doc_id_map.json",
-                "--train_data_path=train_data/train.jsonl",
+                "--data_path=train_data/train.jsonl",
                 "--vectorizer_path=tfidf/vectorizer-stemmed-32bit.pickle",
                 "--wm_path=tfidf/tfidf_wm-stemmed-32bit.pickle",
                 "--title_vectorizer_path=tfidf/title_vectorizer-32bit.pickle",
                 "--title_wm_path=tfidf/title_tfidf_wm-32bit.pickle",
-                "--out_path=data/document_retrieval"
+                "--out_file=data/document_retrieval/top_docs.jsonl"
             ],
         },
         {
-            "name": "FEVER: Retrieve documents (Dev set)",
+            "name": "FEVER: Retrieve documents (Dev)",
             "type": "python",
             "request": "launch",
             "program": "${workspaceFolder}/src/doc_retrieval/document_retrieval.py",
             "console": "integratedTerminal",
             "args":[
                 "--doc_id_map_path=tfidf/doc_id_map.json",
-                "--train_data_path=train_data/dev.jsonl",
+                "--data_path=train_data/dev.jsonl",
                 "--vectorizer_path=tfidf/vectorizer-stemmed-32bit.pickle",
                 "--wm_path=tfidf/tfidf_wm-stemmed-32bit.pickle",
                 "--title_vectorizer_path=tfidf/title_vectorizer-32bit.pickle",
                 "--title_wm_path=tfidf/title_tfidf_wm-32bit.pickle",
-                "--out_path=data/dev"
+                "--out_file=data/dev/top_docs.jsonl"
             ],
         },
         {
-            "name": "FEVER: NER document retrieval",
+            "name": "FEVER: NER document retrieval (Train)",
             "type": "python",
             "request": "launch",
             "program": "${workspaceFolder}/src/doc_retrieval/ner_doc_retrieval.py",
@@ -122,7 +122,32 @@
             "args":[
                 "--db_path=data/feverous_wikiv1.db",
                 "--data_path=train_data/train.jsonl",
-                "--out_file=data/ner_retrieval/top_docs.jsonl"
+                "--out_file=data/ner_retrieval/top_docs.jsonl",
+                "--tagged_id_map_file=data/ner_retrieval/tagged_id_map.json",
+            ],
+        },
+        {
+            "name": "FEVER: NER document retrieval (Dev)",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/doc_retrieval/ner_doc_retrieval.py",
+            "console": "integratedTerminal",
+            "args":[
+                "--db_path=data/feverous_wikiv1.db",
+                "--data_path=train_data/dev.jsonl",
+                "--out_file=data/ner_retrieval/top_docs_dev.jsonl",
+            ],
+        },
+        {
+            "name": "FEVER: Merge NER and TF-IDF retrieval (Dev)",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/doc_retrieval/merge_ner_and_tfidf_retrieval.py",
+            "console": "integratedTerminal",
+            "args":[
+                "--ner_docs_path=data/ner_retrieval/top_docs_dev.jsonl",
+                "--tfidf_docs_path=data/dev/top_10_docs.jsonl",
+                "--out_file=data/ner_retrieval/top_docs_ner_and_tfidf_dev.jsonl",
             ],
         },
         {
@@ -135,6 +160,18 @@
                 "--data_path=train_data/train.jsonl",
                 "--top_k_docs_path=data/document_retrieval/top_10_docs.jsonl",
                 "--out_file=data/doc_retrieval_acc.json"
+            ],
+        },
+        {
+            "name": "FEVER: Calculate document retrieval accuracy (NER Dev)",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/doc_retrieval/calculate_doc_retrieval_accuracy.py",
+            "console": "integratedTerminal",
+            "args":[
+                "--data_path=train_data/dev.jsonl",
+                "--top_k_docs_path=data/ner_retrieval/top_docs_dev.jsonl",
+                "--out_file=data/ner_retrieval/retrieval_acc_dev.json"
             ],
         },
         {
