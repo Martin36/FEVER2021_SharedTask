@@ -1,20 +1,18 @@
-import sys
-import os
-import unicodedata
-import argparse
-import jsonlines
+import sys, os, unicodedata, argparse, jsonlines
 
 from tqdm import tqdm
 
-from util.util_funcs import replace_entities, load_jsonl, create_table_dict
+from util.util_funcs import replace_entities, load_jsonl, create_table_dict, store_jsonl
+from util.logger import get_logger
 
 DIR_PATH = os.path.abspath(os.getcwd())
-
 FEVEROUS_PATH = DIR_PATH + "/FEVEROUS/src"
 sys.path.insert(0, FEVEROUS_PATH)
 
 from database.feverous_db import FeverousDB
 from utils.wiki_page import WikiPage
+
+logger = get_logger()
 
 
 def get_answer_texts(db, data):
@@ -49,7 +47,9 @@ def get_answer_texts(db, data):
 
 def convert_to_tapas_format(db, data):
     evidence_list = data["evidence"][0]["content"]
-    # TODO: The evidence could actually come from several document, how to handle that?
+    # This document title is not really used for anything important in tapas
+    # Therefore, it doesn't really matter that only one title is used when
+    # evidence can come from several documents
     document_title = evidence_list[0].split("_")[0]
 
     result_dict = {}
@@ -94,20 +94,12 @@ def create_tapas_data(db, data):
     for i, d in enumerate(tqdm(data)):
         data = convert_to_tapas_format(db, d)
         if not data:
-            print("Skipping train example {}".format(i))
+            logger.info("Skipping train example {}".format(i))
         else:
             if None in data["answer_texts"]:
-                print("Train sample {} has None type answer texts".format(i))
+                logger.info("Train sample {} has None type answer texts".format(i))
             tapas_data.append(data)
     return tapas_data
-
-
-def store_tapas_data(tapas_data, out_path):
-    print("Storing tapas data...")
-    with jsonlines.open(out_path + "tapas_train.jsonl", mode="w") as f:
-        for d in tapas_data:
-            f.write(d)
-    print("Finished storing tapas data")
 
 
 def main():
@@ -121,7 +113,7 @@ def main():
         "--data_path", default=None, type=str, help="Path to the train data"
     )
     parser.add_argument(
-        "--out_path", default=None, type=str, help="Path to the output folder"
+        "--out_file", default=None, type=str, help="Path to the output folder"
     )
 
     args = parser.parse_args()
@@ -136,23 +128,23 @@ def main():
         raise RuntimeError(
             "The train data path should include the name of the .jsonl file"
         )
-    if not args.out_path:
+    if not args.out_file:
         raise RuntimeError("Invalid output path")
 
-    out_dir = os.path.dirname(args.out_path)
+    out_dir = os.path.dirname(args.out_file)
     if not os.path.exists(out_dir):
-        print("Output directory doesn't exist. Creating {}".format(out_dir))
+        logger.info("Output directory doesn't exist. Creating {}".format(out_dir))
         os.makedirs(out_dir)
 
     db = FeverousDB(args.db_path)
-
     data = load_jsonl(args.data_path)[1:]
 
-    print("Creating tapas data...")
+    logger.info("Creating tapas data...")
     tapas_data = create_tapas_data(db, data)
-    print("Finished creating tapas data")
+    logger.info("Finished creating tapas data")
 
-    store_tapas_data(tapas_data, args.out_path)
+    store_jsonl(tapas_data, args.out_file)
+    logger.info("Stored tapas data in '{}'".format(args.out_file))
 
 
 if __name__ == "__main__":

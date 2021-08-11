@@ -187,28 +187,54 @@
             ],
         },
         {
-            "name": "FEVER: Retrieve top sentences",
+            "name": "FEVER: Retrieve top sentences (Train)",
             "type": "python",
             "request": "launch",
             "program": "${workspaceFolder}/src/sent_retrieval/sentence_retrieval.py",
             "console": "integratedTerminal",
             "args":[
                 "--db_path=data/feverous_wikiv1.db",
-                "--top_docs_path=data/document_retrieval/top_10_docs.jsonl",
-                "--out_path=data/document_retrieval",
+                "--top_docs_file=data/document_retrieval/top_10_docs.jsonl",
+                "--out_file=data/document_retrieval/top_sents.jsonl",
                 "--n_gram_min=1",
                 "--n_gram_max=3"
             ],
         },
         {
-            "name": "FEVER: Calculate sentence retrieval accuracy",
+            "name": "FEVER: Retrieve top sentences (Dev)",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/sent_retrieval/sentence_retrieval.py",
+            "console": "integratedTerminal",
+            "args":[
+                "--db_path=data/feverous_wikiv1.db",
+                "--top_docs_file=data/dev/top_docs.jsonl",
+                "--out_file=data/dev/top_sents.jsonl",
+                "--n_gram_min=1",
+                "--n_gram_max=3"
+            ],
+        },
+        {
+            "name": "FEVER: Calculate sentence retrieval accuracy (Train)",
             "type": "python",
             "request": "launch",
             "program": "${workspaceFolder}/src/sent_retrieval/calculate_sentence_retrieval_accuracy.py",
             "console": "integratedTerminal",
             "args":[
                 "--data_path=train_data/train.jsonl",
-                "--top_k_sents_path=data/document_retrieval/top_5_sents.jsonl",
+                "--top_k_sents_file=data/document_retrieval/top_5_sents.jsonl",
+                "--k=5"
+            ],
+        },
+        {
+            "name": "FEVER: Calculate sentence retrieval accuracy (Dev)",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/sent_retrieval/calculate_sentence_retrieval_accuracy.py",
+            "console": "integratedTerminal",
+            "args":[
+                "--data_path=train_data/dev.jsonl",
+                "--top_k_sents_file=data/dev/top_sents.jsonl",
                 "--k=5"
             ],
         },
@@ -221,7 +247,7 @@
             "args":[
                 "--db_path=data/feverous_wikiv1.db",
                 "--data_path=train_data/train.jsonl",
-                "--out_path=data/tapas/train/"
+                "--out_file=data/tapas/train/tapas_train.jsonl"
             ],
         },
         {
@@ -233,7 +259,7 @@
             "args":[
                 "--db_path=data/feverous_wikiv1.db",
                 "--data_path=train_data/dev.jsonl",
-                "--out_path=data/tapas/dev/"
+                "--out_file=data/tapas/tapas_dev.jsonl"
             ],
         },
         {

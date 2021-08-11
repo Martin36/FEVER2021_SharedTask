@@ -1,23 +1,23 @@
-import jsonlines
-import os
-import sys
-import argparse
+import os, sys, argparse
 
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 from tqdm import tqdm
 
-from util.util_funcs import load_jsonl, replace_entities, extract_sents
+from util.util_funcs import load_jsonl, replace_entities, extract_sents, store_jsonl
+from util.logger import get_logger
 
 DIR_PATH = os.path.abspath(os.getcwd())
-
 FEVEROUS_PATH = DIR_PATH + "/FEVEROUS/src"
 sys.path.insert(0, FEVEROUS_PATH)
 
 from database.feverous_db import FeverousDB
 from utils.wiki_page import WikiPage
 
+logger = get_logger()
 
+
+# TODO: The table parts are currently not used
 def extract_table_text(table):
     cell_ids = table.get_ids()
     table_rows = []
@@ -101,13 +101,13 @@ def get_top_sents(db, doc_ids, claim, use_tables, n_gram_min, n_gram_max, nr_of_
 
 
 def get_top_sents_for_claims(
-    db_path, top_docs_path, nr_of_sents, use_tables, n_gram_min, n_gram_max
+    db_path, top_docs_file, nr_of_sents, use_tables, n_gram_min, n_gram_max
 ):
     db = FeverousDB(db_path)
 
-    print("Loading previously retrieved docs for claims...")
-    top_k_docs = load_jsonl(top_docs_path)
-    print("Finished loading top docs")
+    logger.info("Loading previously retrieved docs for claims...")
+    top_k_docs = load_jsonl(top_docs_file)
+    logger.info("Finished loading top docs")
 
     result = []
     for obj in tqdm(top_k_docs):
@@ -159,14 +159,6 @@ def get_top_sents_for_claim(
     return top_sents
 
 
-def store_top_sents(top_sents, nr_of_sents, path):
-    file_path = "{}/top_{}_sents.jsonl".format(path, nr_of_sents)
-    with jsonlines.open(file_path, "w") as f:
-        for obj in top_sents:
-            f.write(obj)
-    print("Top {} sents for each claim stored in {}".format(nr_of_sents, file_path))
-
-
 def main():
     parser = argparse.ArgumentParser(
         description="Retrieves the most similar sentences from the given documents"
@@ -175,16 +167,16 @@ def main():
         "--db_path", default=None, type=str, help="Path to the FEVEROUS database"
     )
     parser.add_argument(
-        "--top_docs_path",
+        "--top_docs_file",
         default=None,
         type=str,
         help="Path to the file for the top docs predictions",
     )
     parser.add_argument(
-        "--out_path",
+        "--out_file",
         default=None,
         type=str,
-        help="Path to the output folder, where the top k sentences should be stored",
+        help="Path to the output jsonl file, where the top k sentences should be stored",
     )
     parser.add_argument(
         "--nr_of_sents",
@@ -217,39 +209,37 @@ def main():
         raise RuntimeError("Invalid database path")
     if ".db" not in args.db_path:
         raise RuntimeError("The database path should include the name of the .db file")
-    if not args.top_docs_path:
+    if not args.top_docs_file:
         raise RuntimeError("Invalid top docs path")
-    if ".jsonl" not in args.top_docs_path:
+    if ".jsonl" not in args.top_docs_file:
         raise RuntimeError(
             "The top docs path should include the name of the .jsonl file"
         )
+    if not args.out_file:
+        raise RuntimeError("Invalid output file path")
+    if ".jsonl" not in args.out_file:
+        raise RuntimeError(
+            "The output file path should include the name of the .jsonl file"
+        )
 
-    if not args.out_path:
-        raise RuntimeError("Invalid output path")
-
-    out_dir = os.path.dirname(args.out_path)
-    if not os.path.exists(out_dir):
-        print("Output directory doesn't exist. Creating {}".format(out_dir))
-        os.makedirs(out_dir)
-
-    print(
+    logger.info(
         "Retrieving top {} sentences for each claim from the retrieved docs...".format(
             args.nr_of_sents
         )
     )
     top_sents = get_top_sents_for_claims(
         args.db_path,
-        args.top_docs_path,
+        args.top_docs_file,
         args.nr_of_sents,
         args.use_tables,
         args.n_gram_min,
         args.n_gram_max,
     )
-    print("Finished retrieving top sentences")
+    logger.info("Finished retrieving top sentences")
 
-    print("Storing top sentences...")
-    store_top_sents(top_sents, args.nr_of_sents, args.out_path)
-    print("Finished storing top sentences")
+    logger.info("Storing top sentences...")
+    store_jsonl(top_sents, args.out_file)
+    logger.info("Top sents for each claim stored in {}".format(args.out_file))
 
 
 if __name__ == "__main__":

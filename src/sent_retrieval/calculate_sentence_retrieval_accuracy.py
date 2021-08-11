@@ -55,7 +55,7 @@ def main():
     )
     parser.add_argument("--data_path", default=None, type=str, help="Path to the data")
     parser.add_argument(
-        "--top_k_sents_path",
+        "--top_k_sents_file",
         default=None,
         type=str,
         help="Path to the top k docs from the document retriever",
@@ -75,17 +75,17 @@ def main():
         raise RuntimeError(
             "The train data path should include the name of the .jsonl file"
         )
-    if not args.top_k_sents_path:
+    if not args.top_k_sents_file:
         raise RuntimeError("Invalid top k sents path")
-    if ".jsonl" not in args.top_k_sents_path:
+    if ".jsonl" not in args.top_k_sents_file:
         raise RuntimeError(
-            "The top k docs sents should include the name of the .json file"
+            "The top k docs sents file path should include the name of the .jsonl file"
         )
     if not args.k:
         raise RuntimeError("Invalid argument: 'k'")
 
     data = load_jsonl(args.data_path)[1:]
-    related_sents = load_jsonl(args.top_k_sents_path)
+    related_sents = load_jsonl(args.top_k_sents_file)
 
     precision, recall = calculate_score(data, related_sents, args.k)
     logger.info("Precision for top k sentences: {}".format(precision))

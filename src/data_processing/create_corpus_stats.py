@@ -1,12 +1,9 @@
 import argparse
 from collections import defaultdict
-from nltk.corpus import stopwords
 from util.util_funcs import store_json, corpus_generator, tokenize
 from util.logger import get_logger
 
 logger = get_logger()
-
-s_words = set(stopwords.words("english"))
 
 
 def main():

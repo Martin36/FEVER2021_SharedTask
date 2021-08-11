@@ -117,7 +117,7 @@ If you would like to see how well the document retrieval model performed, run th
 ```
 python src/doc_retrieval/calculate_doc_retrieval_accuracy.py \
     --data_path=<REPLACE_WITH_PATH_TO_YOUR_train.jsonl_FILE> \
-    --top_k_docs_path=data/document_retrieval/top_10_docs.jsonl
+    --top_k_docs_path=data/document_retrieval/top_docs.jsonl
 ```
 
 ### Step 2: Retrieve top sentences
@@ -126,7 +126,7 @@ The next step is to retrieve the most relevant sentences from the documents that
 ```
 python src/sent_retrieval/sentence_retrieval.py \
     --db_path=<REPLACE_WITH_PATH_TO_YOUR_DB_FILE> \
-    --top_docs_path=data/document_retrieval/top_10_docs.jsonl \
+    --top_docs_path=data/document_retrieval/top_docs.jsonl \
     --out_path=data/document_retrieval \
     --n_gram_min=1 \
     --n_gram_max=3
@@ -149,6 +149,12 @@ TODO
 To extract tables from the documents we will use the TaPaS repository. First the FEVEROUS data needs to be converted to a format that is suitable for the TaPaS input. This can be done by running the following script:
 
 ```
+python src/data_processing/create_tapas_data.py \
+    --db_path=<REPLACE_WITH_PATH_TO_YOUR_DB_FILE> \
+    --data_path=<REPLACE_WITH_PATH_TO_YOUR_train.jsonl_FILE> \
+    --out_path=data/tapas/train/
+```
+
 
 
 
