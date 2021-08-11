@@ -199,9 +199,34 @@ def remove_punctuation(sent):
 
 
 def stemming_tokenizer(str_input):
+    """Converts a string to a list of words, removing special character, stopwords
+        and stemming the words
+
+    Args:
+        s (str): The string to be tokenized
+
+    Returns:
+        list: A list of words
+    """
+
     words = re.sub(r"[^A-Za-z0-9\-]", " ", str_input).lower().split()
     words = [word for word in words if word not in s_words]
     words = [porter_stemmer.stem(word) for word in words]
+    return words
+
+
+def tokenize(s: str):
+    """Converts a string to a list of words, and removing special character and stopwords
+
+    Args:
+        s (str): The string to be tokenized
+
+    Returns:
+        list: A list of words
+    """
+
+    words = re.sub(r"[^A-Za-z0-9\-]", " ", s).lower().split()
+    words = [word for word in words if word not in s_words]
     return words
 
 

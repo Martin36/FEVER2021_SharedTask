@@ -15,13 +15,13 @@ def get_evidence_docs(doc_json):
     return doc_names
 
 
-def calculate_accuracy(related_docs, train_data):
+def calculate_accuracy(related_docs, data):
     nr_of_correct_samples = 0
     sum_precision = 0
     sum_recall = 0
-    for i in tqdm(range(len(train_data))):
-        evidence_docs = get_evidence_docs(train_data[i])
-        assert train_data[i]["claim"] == related_docs[i]["claim"]
+    for i in tqdm(range(len(data))):
+        evidence_docs = get_evidence_docs(data[i])
+        assert data[i]["claim"] == related_docs[i]["claim"]
         nr_of_correct_samples += 1
         nr_correct_for_current = 0
         any_match = False
@@ -40,7 +40,7 @@ def calculate_accuracy(related_docs, train_data):
 
         if not any_match:
             no_match_obj = {
-                "claim": train_data[i]["claim"],
+                "claim": data[i]["claim"],
                 "evidence_docs": evidence_docs,
                 "related_docs": related_docs[i]["docs"],
             }
@@ -54,9 +54,9 @@ def calculate_accuracy(related_docs, train_data):
         sum_precision += curr_precision
         sum_recall += curr_recall
 
-    accuracy = (nr_of_correct_samples / len(train_data)) * 100
-    precision = (sum_precision / len(train_data)) * 100
-    recall = (sum_recall / len(train_data)) * 100
+    accuracy = (nr_of_correct_samples / len(data)) * 100
+    precision = (sum_precision / len(data)) * 100
+    recall = (sum_recall / len(data)) * 100
     f1 = calc_f1(precision, recall)
     return accuracy, precision, recall, f1
 
@@ -120,7 +120,7 @@ def main():
     stats["recall"] = recall
     stats["f1"] = f1
 
-    store_json(stats, args.out_file)
+    store_json(stats, args.out_file, indent=2)
     print("Stored results in '{}'".format(args.out_file))
 
 

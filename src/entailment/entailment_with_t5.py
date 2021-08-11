@@ -4,7 +4,7 @@ import torch
 
 from transformers import T5ForConditionalGeneration, T5Tokenizer
 from tqdm import tqdm
-from util_funcs import load_jsonl
+from util.util_funcs import load_jsonl
 
 model = T5ForConditionalGeneration.from_pretrained("t5-small")
 tokenizer = T5Tokenizer.from_pretrained("t5-small")
@@ -98,7 +98,7 @@ def main():
         description="Extracts the text from the feverous db and creates a corpus"
     )
     parser.add_argument(
-        "--train_data_path",
+        "--data_path",
         default=None,
         type=str,
         help="Path to the file containing the training data",
@@ -106,11 +106,11 @@ def main():
 
     args = parser.parse_args()
 
-    if not args.train_data_path:
+    if not args.data_path:
         raise RuntimeError("Invalid train data path")
 
-    train_data = load_jsonl(args.train_data_path)
-    test_model(train_data)
+    data = load_jsonl(args.data_path)
+    test_model(data)
 
 
 if __name__ == "__main__":

@@ -2,15 +2,18 @@ import argparse
 import unicodedata
 
 from util.util_funcs import load_jsonl
+from util.logger import get_logger
+
+logger = get_logger()
 
 
-def calculate_score(train_data, related_sents, k, print_low_recall=False):
+def calculate_score(data, related_sents, k, print_low_recall=False):
     sum_precision = 0
     sum_recall = 0
     counter = 0
     claims_with_sent_evidence = 0
-    for i in range(len(train_data)):
-        evidence_sents = train_data[i]["evidence"][0]["content"]
+    for i in range(len(data)):
+        evidence_sents = data[i]["evidence"][0]["content"]
         evidence_sents = [sent for sent in evidence_sents if "_sentence_" in sent]
         if len(evidence_sents) == 0:
             continue
@@ -18,7 +21,7 @@ def calculate_score(train_data, related_sents, k, print_low_recall=False):
         rel_sents_obj = related_sents[i]
         rel_sents = rel_sents_obj["top_{}_sents".format(k)]
         assert (
-            rel_sents_obj["id"] == train_data[i]["id"]
+            rel_sents_obj["id"] == data[i]["id"]
         )  # Make sure that the arrays are in the same order
         nr_of_correct_sents = 0
         for sent in evidence_sents:
@@ -50,9 +53,7 @@ def main():
     parser = argparse.ArgumentParser(
         description="Calculates the accuracy of the sentence retrieval"
     )
-    parser.add_argument(
-        "--train_data_path", default=None, type=str, help="Path to the train data"
-    )
+    parser.add_argument("--data_path", default=None, type=str, help="Path to the data")
     parser.add_argument(
         "--top_k_sents_path",
         default=None,
@@ -68,9 +69,9 @@ def main():
 
     args = parser.parse_args()
 
-    if not args.train_data_path:
+    if not args.data_path:
         raise RuntimeError("Invalid train data path")
-    if ".jsonl" not in args.train_data_path:
+    if ".jsonl" not in args.data_path:
         raise RuntimeError(
             "The train data path should include the name of the .jsonl file"
         )
@@ -83,13 +84,12 @@ def main():
     if not args.k:
         raise RuntimeError("Invalid argument: 'k'")
 
-    train_data = load_jsonl(args.train_data_path)
-    train_data = train_data[1:]
+    data = load_jsonl(args.data_path)[1:]
     related_sents = load_jsonl(args.top_k_sents_path)
 
-    precision, recall = calculate_score(train_data, related_sents, args.k)
-    print("Precision for top k sentences: {}".format(precision))
-    print("Recall for top k sentences: {}".format(recall))
+    precision, recall = calculate_score(data, related_sents, args.k)
+    logger.info("Precision for top k sentences: {}".format(precision))
+    logger.info("Recall for top k sentences: {}".format(recall))
 
 
 if __name__ == "__main__":

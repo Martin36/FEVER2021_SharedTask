@@ -89,9 +89,9 @@ def convert_to_tapas_format(db, data):
     return result_dict
 
 
-def create_tapas_data(db, train_data):
+def create_tapas_data(db, data):
     tapas_data = []
-    for i, d in enumerate(tqdm(train_data)):
+    for i, d in enumerate(tqdm(data)):
         data = convert_to_tapas_format(db, d)
         if not data:
             print("Skipping train example {}".format(i))
@@ -118,7 +118,7 @@ def main():
         "--db_path", default=None, type=str, help="Path to the FEVEROUS database"
     )
     parser.add_argument(
-        "--train_data_path", default=None, type=str, help="Path to the train data"
+        "--data_path", default=None, type=str, help="Path to the train data"
     )
     parser.add_argument(
         "--out_path", default=None, type=str, help="Path to the output folder"
@@ -130,9 +130,9 @@ def main():
         raise RuntimeError("Invalid database path")
     if ".db" not in args.db_path:
         raise RuntimeError("The database path should include the name of the .db file")
-    if not args.train_data_path:
+    if not args.data_path:
         raise RuntimeError("Invalid train data path")
-    if ".jsonl" not in args.train_data_path:
+    if ".jsonl" not in args.data_path:
         raise RuntimeError(
             "The train data path should include the name of the .jsonl file"
         )
@@ -146,11 +146,10 @@ def main():
 
     db = FeverousDB(args.db_path)
 
-    train_data = load_jsonl(args.train_data_path)
-    train_data = train_data[1:]
+    data = load_jsonl(args.data_path)[1:]
 
     print("Creating tapas data...")
-    tapas_data = create_tapas_data(db, train_data)
+    tapas_data = create_tapas_data(db, data)
     print("Finished creating tapas data")
 
     store_tapas_data(tapas_data, args.out_path)

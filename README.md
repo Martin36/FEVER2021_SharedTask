@@ -41,8 +41,6 @@ pip install -r requirements.txt`
 ```
 
 
-
-
 ## How to run the system
 
 #### Prerequistics
@@ -62,7 +60,7 @@ Run the following code to create the text corpus:
 ##### Note: Create a folder named `data` directly in the repo to store all the files in
 
 ```
-python create_corpus.py \
+python src/data_processing/create_corpus.py \
     --db_path=<REPLACE_WITH_PATH_TO_YOUR_DB_FILE> \
     --out_path=data/corpus/
 ```
@@ -72,7 +70,7 @@ It will created a bunch of json files with all the documents in the database. Ea
 Once we have created the corpus documents we can create the TF-IDF matrix for all the documents. To do that, run the following code:
 ##### Note: This might take a lot of your RAM
 ```
-python create_tfidf.py \
+python src/doc_retrieval/create_tfidf.py \
     --use_stemming \
     --corpus_path=data/corpus/ \
     --out_path=tfidf/
@@ -83,7 +81,7 @@ If that argument is removed, stemming will not used and the creation of the matr
 To create the TF-IDF matrix for the titles, run the following code:
 
 ```
-python create_title_tfidf.py \
+python src/doc_retrieval/create_title_tfidf.py \
     --corpus_path=data/corpus/ \
     --out_path=tfidf/ \
     --n_gram_min=2 \
@@ -99,9 +97,9 @@ This second matrix will take significantly less time to create, than the previou
 Now we have done all the prerequistics to retrieve the top documents. To retrieve the top *k* documents for the training data, run the following code:
 
 ```
-python document_retrieval.py \
+python src/doc_retrieval/document_retrieval.py \
     --doc_id_map_path=tfidf/doc_id_map.json \
-    --train_data_path=<REPLACE_WITH_PATH_TO_YOUR_train.jsonl_FILE> \
+    --data_path=<REPLACE_WITH_PATH_TO_YOUR_train.jsonl_FILE> \
     --vectorizer_path=tfidf/vectorizer-stemmed-32bit.pickle \
     --wm_path=tfidf/tfidf_wm-stemmed-32bit.pickle \
     --title_vectorizer_path=tfidf/title_vectorizer-32bit.pickle \
@@ -117,8 +115,8 @@ By default the document retrieval script returns the top 5 documents each, for t
 If you would like to see how well the document retrieval model performed, run the code below:
 ##### Note: This assumes that you ran the document retrieval with the default (e.g. 5) nr of documents
 ```
-python calculate_doc_retrieval_accuracy.py \
-    --train_data_path=<REPLACE_WITH_PATH_TO_YOUR_train.jsonl_FILE> \
+python src/doc_retrieval/calculate_doc_retrieval_accuracy.py \
+    --data_path=<REPLACE_WITH_PATH_TO_YOUR_train.jsonl_FILE> \
     --top_k_docs_path=data/document_retrieval/top_10_docs.jsonl
 ```
 
@@ -126,7 +124,7 @@ python calculate_doc_retrieval_accuracy.py \
 The next step is to retrieve the most relevant sentences from the documents that we just retrieved.
 
 ```
-python sentence_retrieval.py \
+python src/sent_retrieval/sentence_retrieval.py \
     --db_path=<REPLACE_WITH_PATH_TO_YOUR_DB_FILE> \
     --top_docs_path=data/document_retrieval/top_10_docs.jsonl \
     --out_path=data/document_retrieval \
@@ -139,14 +137,19 @@ Here we use a TF-IDF matrix with unigrams, bigrams and trigrams to retrieve the 
 If you want to see how well the sentence retrieval performed, run the following code:
 
 ```
-python calculate_sentence_retrieval_accuracy.py \
-    --train_data_path=<REPLACE_WITH_PATH_TO_YOUR_train.jsonl_FILE> \
+python src/sent_retrieval/calculate_sentence_retrieval_accuracy.py \
+    --data_path=<REPLACE_WITH_PATH_TO_YOUR_train.jsonl_FILE> \
     --top_k_sents_path=data/document_retrieval/top_5_sents.jsonl \
     --k=5
 ```
 
 ### Step 3: Extract tables from documents
 TODO
+
+To extract tables from the documents we will use the TaPaS repository. First the FEVEROUS data needs to be converted to a format that is suitable for the TaPaS input. This can be done by running the following script:
+
+```
+
 
 
 ### Step 4: Table cell extraction

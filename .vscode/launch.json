@@ -42,7 +42,8 @@
             "console": "integratedTerminal",
             "args":[
                 "--corpus_path=data/corpus/",
-                "--out_file=data/stats/corpus_stats.json"
+                "--doc_len_dist_file=data/stats/doc_len_dist.json",
+                "--term_counts_file=data/stats/term_counts.json"
             ],
         },
         {
@@ -122,8 +123,7 @@
             "args":[
                 "--db_path=data/feverous_wikiv1.db",
                 "--data_path=train_data/train.jsonl",
-                "--out_file=data/ner_retrieval/top_docs.jsonl",
-                "--tagged_id_map_file=data/ner_retrieval/tagged_id_map.json",
+                "--out_file=data/ner_retrieval/top_docs_train.jsonl",
             ],
         },
         {
@@ -163,6 +163,18 @@
             ],
         },
         {
+            "name": "FEVER: Calculate document retrieval accuracy (Dev)",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/doc_retrieval/calculate_doc_retrieval_accuracy.py",
+            "console": "integratedTerminal",
+            "args":[
+                "--data_path=train_data/dev.jsonl",
+                "--top_k_docs_path=data/dev/top_docs.jsonl",
+                "--out_file=data/dev/doc_retrieval_acc.json"
+            ],
+        },
+        {
             "name": "FEVER: Calculate document retrieval accuracy (NER Dev)",
             "type": "python",
             "request": "launch",
@@ -170,7 +182,7 @@
             "console": "integratedTerminal",
             "args":[
                 "--data_path=train_data/dev.jsonl",
-                "--top_k_docs_path=data/ner_retrieval/top_docs_dev.jsonl",
+                "--top_k_docs_path=data/ner_retrieval/top_docs_ner_and_tfidf_dev.jsonl",
                 "--out_file=data/ner_retrieval/retrieval_acc_dev.json"
             ],
         },
@@ -195,32 +207,32 @@
             "program": "${workspaceFolder}/src/sent_retrieval/calculate_sentence_retrieval_accuracy.py",
             "console": "integratedTerminal",
             "args":[
-                "--train_data_path=train_data/train.jsonl",
+                "--data_path=train_data/train.jsonl",
                 "--top_k_sents_path=data/document_retrieval/top_5_sents.jsonl",
                 "--k=5"
             ],
         },
         {
-            "name": "FEVER: Create Tapas Train Data",
+            "name": "FEVER: Create Tapas Data (Train)",
             "type": "python",
             "request": "launch",
             "program": "${workspaceFolder}/src/data_processing/create_tapas_data.py",
             "console": "integratedTerminal",
             "args":[
                 "--db_path=data/feverous_wikiv1.db",
-                "--train_data_path=train_data/train.jsonl",
+                "--data_path=train_data/train.jsonl",
                 "--out_path=data/tapas/train/"
             ],
         },
         {
-            "name": "FEVER: Create Tapas Dev Data",
+            "name": "FEVER: Create Tapas Data (Dev)",
             "type": "python",
             "request": "launch",
             "program": "${workspaceFolder}/src/data_processing/create_tapas_data.py",
             "console": "integratedTerminal",
             "args":[
                 "--db_path=data/feverous_wikiv1.db",
-                "--train_data_path=train_data/dev.jsonl",
+                "--data_path=train_data/dev.jsonl",
                 "--out_path=data/tapas/dev/"
             ],
         },
@@ -520,7 +532,7 @@
             "program": "${workspaceFolder}/src/entailment/entailment_with_t5.py",
             "console": "integratedTerminal",
             "args":[
-                "--train_data_path=data/sentence_entailment_train_data.jsonl",
+                "--data_path=data/sentence_entailment_train_data.jsonl",
             ],
             "justMyCode": false
         },
@@ -675,7 +687,7 @@
             "console": "integratedTerminal",
             "args":[
                 "--doc_id_map_path=tfidf/doc_id_map.json",
-                "--train_data_path=train_data/feverous_test_unlabeled.jsonl",
+                "--data_path=train_data/feverous_test_unlabeled.jsonl",
                 "--vectorizer_path=tfidf/vectorizer-stemmed-32bit.pickle",
                 "--wm_path=tfidf/tfidf_wm-stemmed-32bit.pickle",
                 "--title_vectorizer_path=tfidf/title_vectorizer-32bit.pickle",

@@ -6,10 +6,10 @@ from util.util_funcs import (
     load_json,
     load_jsonl,
     load_tfidf,
-    stemming_tokenizer,
+    stemming_tokenizer,  # "stemming_tokenizer" needs to be imported since it is used in the imported TF-IDF model
     store_jsonl,
     unique,
-)  # "stemming_tokenizer" needs to be imported since it is used in the imported TF-IDF model
+)
 
 from util.logger import get_logger
 
@@ -17,11 +17,11 @@ logger = get_logger()
 
 
 def get_text_related_docs(
-    train_data, doc_id_map, batch_size, nr_of_docs, vectorizer_path, wm_path
+    data, doc_id_map, batch_size, nr_of_docs, vectorizer_path, wm_path
 ):
     tfidf_vectorizer, tfidf_wm = load_tfidf(vectorizer_path, wm_path)
     logger.info("Text TF-IDF shape: {}".format(tfidf_wm.shape))
-    nr_of_queries = len(train_data)
+    nr_of_queries = len(data)
     batches = math.ceil(nr_of_queries / batch_size)
 
     related_docs = []
@@ -37,9 +37,9 @@ def get_text_related_docs(
         if end > nr_of_queries:
             end = nr_of_queries
 
-        train_queries = [train_data[i]["claim"] for i in range(start, end)]
+        queries = [data[i]["claim"] for i in range(start, end)]
 
-        query_tfidf = tfidf_vectorizer.transform(train_queries)
+        query_tfidf = tfidf_vectorizer.transform(queries)
         cosine_similarities = cosine_similarity(query_tfidf, tfidf_wm)
         logger.info(
             "Calculating cosine similarity between doc and claim for batch {} took {} seconds".format(
@@ -63,10 +63,10 @@ def get_text_related_docs(
 
 
 def get_title_related_docs(
-    train_data, doc_id_map, batch_size, nr_of_docs, title_vectorizer_path, title_wm_path
+    data, doc_id_map, batch_size, nr_of_docs, title_vectorizer_path, title_wm_path
 ):
     title_vectorizer, title_wm = load_tfidf(title_vectorizer_path, title_wm_path)
-    nr_of_queries = len(train_data)
+    nr_of_queries = len(data)
     batches = math.ceil(nr_of_queries / batch_size)
 
     related_titles = []
@@ -82,9 +82,9 @@ def get_title_related_docs(
         if end > nr_of_queries:
             end = nr_of_queries
 
-        train_queries = [train_data[i]["claim"] for i in range(start, end)]
+        queries = [data[i]["claim"] for i in range(start, end)]
 
-        query_tfidf = title_vectorizer.transform(train_queries)
+        query_tfidf = title_vectorizer.transform(queries)
         cosine_similarities = cosine_similarity(query_tfidf, title_wm)
         logger.info(
             "Calculating cosine similarity for batch {} took {} seconds".format(
@@ -108,7 +108,7 @@ def get_title_related_docs(
 
 
 def get_top_k_docs(
-    train_data,
+    data,
     doc_id_map_path,
     batch_size,
     nr_of_docs,
@@ -120,16 +120,11 @@ def get_top_k_docs(
     doc_id_map = load_json(doc_id_map_path)
 
     text_related_docs = get_text_related_docs(
-        train_data, doc_id_map, batch_size, nr_of_docs, vectorizer_path, wm_path
+        data, doc_id_map, batch_size, nr_of_docs, vectorizer_path, wm_path
     )
 
     title_related_docs = get_title_related_docs(
-        train_data,
-        doc_id_map,
-        batch_size,
-        nr_of_docs,
-        title_vectorizer_path,
-        title_wm_path,
+        data, doc_id_map, batch_size, nr_of_docs, title_vectorizer_path, title_wm_path
     )
 
     merged_docs = [unique(x + y) for x, y in zip(text_related_docs, title_related_docs)]
@@ -173,10 +168,10 @@ def main():
         "--title_wm_path", default=None, type=str, help="Path to the TF-IDF word model"
     )
     parser.add_argument(
-        "--out_path",
+        "--out_file",
         default=None,
         type=str,
-        help="Path to the output folder, where the top k documents should be stored",
+        help="Path to the output file, where the top k documents should be stored",
     )
     parser.add_argument(
         "--batch_size",
@@ -228,11 +223,11 @@ def main():
             "The title vectorizer path should include the name of the .pickle file"
         )
 
-    train_data = load_jsonl(args.train_data_path)[1:]
+    data = load_jsonl(args.data_path)[1:]
 
     logger.info("Getting the top k docs...")
     top_k_docs = get_top_k_docs(
-        train_data,
+        data,
         args.doc_id_map_path,
         args.batch_size,
         args.nr_of_docs,
@@ -244,7 +239,7 @@ def main():
     logger.info("Finished getting the top k docs")
 
     result = []
-    for i, d in enumerate(train_data):
+    for i, d in enumerate(data):
         obj = {
             "id": d["id"] if "id" in d else i,
             "claim": d["claim"],
