@@ -17,7 +17,7 @@ The code is tested on a machine with the following specs:
 
 Use `git clone --recurse-submodules -j8 https://github.com/Martin36/FEVER2021_SharedTask.git` to clone the repo. This will make sure that the submodules are cloned with the repo.
 
-## Creating Anaconda environment
+## Creating Anaconda environment and installing requirements
 
 Run the following command to create the conda environment, which includes packages needed to run.
 ```
@@ -39,6 +39,23 @@ Navigate to the FEVEROUS src folder and install the pip requirements for that su
 cd FEVEROUS/src
 pip install -r requirements.txt`
 ```
+
+### Installing Tapas
+Tapas needs `protobuf-compiler` to be able to run. Install it by running the following command (for Ubuntu/Debian):
+
+```
+sudo apt-get install protobuf-compiler
+```
+
+If you are using another OS you can find the relevant download [here](https://github.com/protocolbuffers/protobuf/releases).
+
+Then you can navigate to the tapas folder and run the pip install:
+
+```
+cd tapas
+pip install -e .
+```
+
 
 
 ## How to run the system
@@ -144,7 +161,6 @@ python src/sent_retrieval/calculate_sentence_retrieval_accuracy.py \
 ```
 
 ### Step 3: Extract tables from documents
-TODO
 
 To extract tables from the documents we will use the TaPaS repository. First the FEVEROUS data needs to be converted to a format that is suitable for the TaPaS input. This can be done by running the following script:
 
@@ -152,10 +168,137 @@ To extract tables from the documents we will use the TaPaS repository. First the
 python src/data_processing/create_tapas_data.py \
     --db_path=<REPLACE_WITH_PATH_TO_YOUR_DB_FILE> \
     --data_path=<REPLACE_WITH_PATH_TO_YOUR_train.jsonl_FILE> \
-    --out_path=data/tapas/train/
+    --out_file=data/tapas/train/
 ```
 
+Now for the part where we need to use the tapas repo. This repo is used to train a model for retrieving the most relevant tables. Make sure that you have installed Tapas. If not, take a look at the instructions [here](#installing-tapas).
 
+You will also need to download a pretrained Tapas model from [here](https://github.com/google-research/tapas/blob/master/DENSE_TABLE_RETRIEVER.md). The one I used were `tapas_dual_encoder_proj_256_tiny`, due to a shortage of time and compute resources. But if you have the capability and want better results, you might choose a larger model. These instructions will however assume that you used the tiny pretrained model. If you choose another one, then make sure that you replace all instances of `tapas_dual_encoder_proj_256_tiny` with your model, in the following commands.
+
+To produce the input Tapas data, run the following command:
+
+```
+python tapas/tapas/scripts/preprocess_nq.py \
+    --input_path=data/tapas \
+    --output_path=data/tapas \
+    --runner_type=direct \
+    --fever
+```
+
+Then we create the retrieval data:
+
+```
+python tapas/tapas/retrieval/create_retrieval_data_main.py \
+    --input_interactions_dir=data/tapas/tf_records/interactions \
+    --input_tables_dir=data/tapas/tf_records/tables \
+    --output_dir=data/tapas/tf_records/tf_examples \
+    --vocab_file=tapas_dual_encoder_proj_256_tiny/vocab.txt \
+    --max_seq_length=512 \
+    --max_column_id=512 \
+    --max_row_id=512 \
+    --use_document_title
+```
+
+Now it is time to fine tune the tapas model:
+
+```
+python tapas/tapas/experiments/table_retriever_experiment.py \
+    --do_train \
+    --keep_checkpoint_max=40 \
+    --model_dir=tapas_models \
+    --input_file_train=data/tapas/tf_records/tf_examples/train.tfrecord \
+    --bert_config_file=tapas_dual_encoder_proj_256_tiny/bert_config.json \
+    --init_checkpoint=tapas_dual_encoder_proj_256_tiny/model.ckpt \
+    --init_from_single_encoder=false \
+    --down_projection_dim=256 \
+    --num_train_examples=65000 \
+    --learning_rate=1.25e-5 \
+    --train_batch_size=256 \
+    --warmup_ratio=0.01 \
+    --max_seq_length=512
+```
+
+Evaluate the model:
+
+```
+python tapas/tapas/experiments/table_retriever_experiment.py \
+    --do_predict \
+    --model_dir=tapas_models \
+    --input_file_eval=data/tapas/tf_records/tf_examples/dev.tfrecord \
+    --bert_config_file=tapas_dual_encoder_proj_256_tiny/bert_config.json \
+    --init_from_single_encoder=false \
+    --down_projection_dim=256 \
+    --eval_batch_size=32 \
+    --num_train_examples=65000 \
+    --max_seq_length=512
+```
+
+Now we generate results for each checkpoint:
+
+```
+python tapas/tapas/experiments/table_retriever_experiment.py \
+    --do_predict \
+    --model_dir=tapas_models \
+    --prediction_output_dir=tapas_models/train \
+    --evaluated_checkpoint_metric=precision_at_1 \
+    --input_file_predict=data/tapas/tf_records/tf_examples/train.tfrecord \
+    --bert_config_file=tapas_dual_encoder_proj_256_tiny/bert_config.json \
+    --init_from_single_encoder=false \
+    --down_projection_dim=256 \
+    --eval_batch_size=32 \
+    --max_seq_length=512
+```
+
+```
+python tapas/tapas/experiments/table_retriever_experiment.py \
+    --do_predict \
+    --model_dir=tapas_models \
+    --prediction_output_dir=tapas_models/tables \
+    --evaluated_checkpoint_metric=precision_at_1 \
+    --input_file_predict=data/tapas/tf_records/tf_examples/tables.tfrecord \
+    --bert_config_file=tapas_dual_encoder_proj_256_tiny/bert_config.json \
+    --init_from_single_encoder=false \
+    --down_projection_dim=256 \
+    --eval_batch_size=32 \
+    --max_seq_length=512
+```
+
+```
+python tapas/tapas/experiments/table_retriever_experiment.py \
+    --do_predict \
+    --model_dir=tapas_models \
+    --prediction_output_dir=tapas_models/test \
+    --evaluated_checkpoint_metric=precision_at_1 \
+    --input_file_predict=data/tapas/tf_records/tf_examples/test.tfrecord \
+    --bert_config_file=tapas_dual_encoder_proj_256_tiny/bert_config.json \
+    --init_from_single_encoder=false \
+    --down_projection_dim=256 \
+    --eval_batch_size=32 \
+    --max_seq_length=512
+```
+
+Next we generate the retrieval results for each of the checkpoints:
+
+```
+python tapas/tapas/scripts/eval_table_retriever.py \
+    --prediction_files_local=tapas_models/train/predict_results_253.tsv \
+    --prediction_files_global=tapas_models/tables/predict_results_253.tsv \
+    --retrieval_results_file_path=tapas_models/train_knn.jsonl
+```
+
+```
+python tapas/tapas/scripts/eval_table_retriever.py \
+    --prediction_files_local=tapas_models/test/predict_results_253.tsv \
+    --prediction_files_global=tapas_models/tables/predict_results_253.tsv \
+    --retrieval_results_file_path=tapas_models/test_knn.jsonl
+```
+
+```
+python tapas/tapas/scripts/eval_table_retriever.py \
+    --prediction_files_local=tapas_models/eval_results_253.tsv \
+    --prediction_files_global=tapas_models/tables/predict_results_253.tsv \
+    --retrieval_results_file_path=tapas_models/dev_knn.jsonl
+```
 
 
 ### Step 4: Table cell extraction

@@ -1,4 +1,5 @@
 import os, time, argparse, math
+from typing import List
 
 from sklearn.metrics.pairwise import cosine_similarity
 
@@ -17,8 +18,27 @@ logger = get_logger()
 
 
 def get_text_related_docs(
-    data, doc_id_map, batch_size, nr_of_docs, vectorizer_path, wm_path
+    data: List[dict],
+    doc_id_map: dict,
+    batch_size: int,
+    nr_of_docs: int,
+    vectorizer_path: str,
+    wm_path: str,
 ):
+    """Gets the most relevant documents based on the body text, for each claim
+
+    Args:
+        data (List[dict]): The data from the labelled FEVEROUS dataset
+        doc_id_map (dict): A dict with ids as keys and document names as values
+        batch_size (int): The size of each batch
+        nr_of_docs (int): The number of documents to retrieve for each claim
+        vectorizer_path (str): The path to the vectorizer file
+        wm_path (str): The path to the word model file
+
+    Returns:
+        List[List[str]]: A list of the top documents for each claim
+    """
+
     tfidf_vectorizer, tfidf_wm = load_tfidf(vectorizer_path, wm_path)
     logger.info("Text TF-IDF shape: {}".format(tfidf_wm.shape))
     nr_of_queries = len(data)
@@ -63,9 +83,28 @@ def get_text_related_docs(
 
 
 def get_title_related_docs(
-    data, doc_id_map, batch_size, nr_of_docs, title_vectorizer_path, title_wm_path
-):
-    title_vectorizer, title_wm = load_tfidf(title_vectorizer_path, title_wm_path)
+    data: List[dict],
+    doc_id_map: dict,
+    batch_size: int,
+    nr_of_docs: int,
+    vectorizer_path: str,
+    wm_path: str,
+) -> List[List[str]]:
+    """Gets the most relevant documents based on the title text, for each claim
+
+    Args:
+        data (List[dict]): The data from the labelled FEVEROUS dataset
+        doc_id_map (dict): A dict with ids as keys and document names as values
+        batch_size (int): The size of each batch
+        nr_of_docs (int): The number of documents to retrieve for each claim
+        vectorizer_path (str): The path to the vectorizer file
+        wm_path (str): The path to the word model file
+
+    Returns:
+        List[List[str]]: A list of the top documents for each claim
+    """
+
+    title_vectorizer, title_wm = load_tfidf(vectorizer_path, wm_path)
     nr_of_queries = len(data)
     batches = math.ceil(nr_of_queries / batch_size)
 

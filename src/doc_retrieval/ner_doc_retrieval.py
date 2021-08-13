@@ -2,6 +2,7 @@ import functools
 import logging
 import os, sys
 import argparse
+from typing import Any, List
 import spacy
 from tqdm import tqdm
 from collections import defaultdict
@@ -55,13 +56,34 @@ def create_ner_tagged_doc_ids(nlp, doc_ids, out_file):
     return tagged_id_map
 
 
-def retrieve_documents(nlp, doc_ids, data):
+def retrieve_documents(
+    nlp: Any,
+    doc_ids: List[str],
+    top_terms: List[str],
+    filter_entities: bool,
+    data: List[dict],
+):
+
     claim_rel_doc_map = {}
+    filtered_entity_types = [
+        "CARDINAL",
+        "DATE",
+        "MONEY",
+        "ORDINAL",
+        "PERCENT",
+        "QUANTITY",
+        "TIME",
+    ]
     for d in tqdm(data):
         claim = d["claim"]
         parsed_claim = nlp(claim)
         rel_docs = []
         for ent in parsed_claim.ents:
+            if filter_entities:
+                if ent.label_ in filtered_entity_types:
+                    continue
+                if ent.text.lower() in top_terms:
+                    continue
             if ent.text in doc_ids:
                 rel_docs.append(ent.text)
         claim_rel_doc_map[claim] = rel_docs
@@ -87,16 +109,22 @@ def main():
         "--data_path", default=None, type=str, help="Path to the train data"
     )
     parser.add_argument(
+        "--top_term_counts_file",
+        default=None,
+        type=str,
+        help="Path to the top term counts file",
+    )
+    parser.add_argument(
         "--out_file",
         default=None,
         type=str,
         help="Path to the file to store the results",
     )
     parser.add_argument(
-        "--tagged_id_map_file",
-        default=None,
-        type=str,
-        help="Path to the file to store the tagged id map",
+        "--filter_entities",
+        default=False,
+        action="store_true",
+        help="If set, the numerical entities and most common words are filtered",
     )
 
     args = parser.parse_args()
@@ -107,11 +135,17 @@ def main():
         raise RuntimeError("The database path should include the name of the .db file")
     if not args.data_path:
         raise RuntimeError("Invalid data path")
-    if ".json" not in args.data_path:
+    if ".jsonl" not in args.data_path:
         raise RuntimeError("The data path should include the name of the .jsonl file")
+    if not args.top_term_counts_file:
+        raise RuntimeError("Invalid top term counts file path")
+    if ".json" not in args.top_term_counts_file:
+        raise RuntimeError(
+            "The top term counts file path should include the name of the .jsonl file"
+        )
     if not args.out_file:
         raise RuntimeError("Invalid out file path")
-    if ".json" not in args.out_file:
+    if ".jsonl" not in args.out_file:
         raise RuntimeError(
             "The out file path should include the name of the .json file"
         )
@@ -119,12 +153,16 @@ def main():
     db = FeverousDB(args.db_path)
     doc_ids = db.get_doc_ids()
     data = load_jsonl(args.data_path)[1:]
+    top_term_counts = load_json(args.top_term_counts_file)
+    top_terms = list(top_term_counts.keys())
     nlp = spacy.load("en_core_web_sm")
 
     nr_threads = 10
     batch_size = len(data) // nr_threads
     batches = [data[i : i + batch_size] for i in range(0, len(data), batch_size)]
-    retrieve_documents_partial = functools.partial(retrieve_documents, nlp, doc_ids)
+    retrieve_documents_partial = functools.partial(
+        retrieve_documents, nlp, doc_ids, top_terms, args.filter_entities
+    )
     with Pool(nr_threads) as pool:
         results = [
             pool.apply_async(retrieve_documents_partial, args=(b,)) for b in batches
@@ -136,7 +174,7 @@ def main():
 
     claim_rel_doc_objs = []
     for claim in claim_rel_doc_map:
-        obj = {"claim": claim, "docs": data[claim]}
+        obj = {"claim": claim, "docs": claim_rel_doc_map[claim]}
         claim_rel_doc_objs.append(obj)
 
     store_jsonl(claim_rel_doc_objs, args.out_file)
