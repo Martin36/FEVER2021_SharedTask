@@ -211,7 +211,7 @@ def main():
     )
     parser.add_argument(
         "--write_to_files",
-        default=False,
+        default=True,
         type=bool,
         help="Should the tables be written to files?",
     )

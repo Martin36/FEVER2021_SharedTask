@@ -490,7 +490,7 @@
             ]
         },
         {
-            "name": "FEVER: Create Tapas Train Tables",
+            "name": "FEVER: Create Tapas Tables (Train)",
             "type": "python",
             "request": "launch",
             "program": "${workspaceFolder}/src/data_processing/create_tapas_tables.py",
@@ -502,7 +502,7 @@
             ],
         },
         {
-            "name": "FEVER: Create Tapas Dev Tables",
+            "name": "FEVER: Create Tapas Tables (Dev)",
             "type": "python",
             "request": "launch",
             "program": "${workspaceFolder}/src/data_processing/create_tapas_tables.py",

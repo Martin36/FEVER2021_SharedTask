@@ -1,6 +1,6 @@
 # FEVER 2021 Shared Task
 
-My contribution for the FEVER 2021 Shared Task
+This repo contains my contribution for the FEVER 2021 Shared Task
 
 More information about the FEVER 2021 Shared Task can be found here: https://fever.ai/task.html
 
@@ -31,13 +31,13 @@ conda activate fever2021
 
 Install the required pip packages:
 ```
-pip install -r requirements.txt`
+pip install -r requirements.txt
 ```
 
 Navigate to the FEVEROUS src folder and install the pip requirements for that submodule:
 ```
 cd FEVEROUS/src
-pip install -r requirements.txt`
+pip install -r requirements.txt
 ```
 
 ### Installing Tapas
@@ -60,7 +60,7 @@ pip install -e .
 
 ## How to run the system
 
-#### Prerequistics
+### Prerequistics
 To be able to run this system, you should first download the data for the FEVEROUS task, which can be found here: https://fever.ai/dataset/feverous.html
 
 The data that you will need is the following:
@@ -93,7 +93,7 @@ python src/doc_retrieval/create_tfidf.py \
     --out_path=tfidf/
 ```
 The `--use_stemming` argument will reduce each word in the corpus to its stemmed version before calculating the TF-IDF matrix.
-If that argument is removed, stemming will not used and the creation of the matrix will go significantly faster.
+If that argument is removed, stemming will not be used and the creation of the matrix will go significantly faster.
 
 To create the TF-IDF matrix for the titles, run the following code:
 
@@ -108,10 +108,12 @@ python src/doc_retrieval/create_title_tfidf.py \
 The `n_gram_min` and `n_gram_max` parameters are used to tell the program which type of n-grams to use for the title TF-IDF matrix.
 In this case a bigram TF-IDF matrix is created.
 
-This second matrix will take significantly less time to create, than the previous one.
+This second matrix will take significantly less time to create than the first one.
 
 #### Retrieving the top documents
 Now we have done all the prerequistics to retrieve the top documents. To retrieve the top *k* documents for the training data, run the following code:
+
+##### Note: Remove "stemmed" if you did not use stemming when creating the body text TF-IDF. This goes for both the vectorizer and word model.
 
 ```
 python src/doc_retrieval/document_retrieval.py \
@@ -124,13 +126,12 @@ python src/doc_retrieval/document_retrieval.py \
     --out_path=data/document_retrieval
 ```
 
-##### Note: Remove "stemmed" if you did not use stemming when creating the body text TF-IDF. This goes for both the vectorizer and word model.
 
 By default the document retrieval script returns the top 5 documents each, for the body text and the title match respectively. This means that the script will return a total of 10 documents, unless some of the matches for the body text and title are overlapping. If you want to change the number of returned documents, set the argument `--nr_of_docs` to the desired amount e.g. `--nr_of_docs=3` if you only want to retrieve 6 documents for each claim.
 
 #### Optional: Calculate document retrieval accuracy
 If you would like to see how well the document retrieval model performed, run the code below:
-##### Note: This assumes that you ran the document retrieval with the default (e.g. 5) nr of documents
+
 ```
 python src/doc_retrieval/calculate_doc_retrieval_accuracy.py \
     --data_path=<REPLACE_WITH_PATH_TO_YOUR_train.jsonl_FILE> \
@@ -151,7 +152,7 @@ python src/sent_retrieval/sentence_retrieval.py \
 Here we use a TF-IDF matrix with unigrams, bigrams and trigrams to retrieve the most relevant sentences from the documents. Feel free to change the parameters `--n_gram_min` and `--n_gram_max`, to see if you get a better accuracy.
 
 #### Optional: Calculate sentence retrieval accuracy
-If you want to see how well the sentence retrieval performed, run the following code:
+If you want to see how well the sentence retrieval performed, run the following code (remember to set **k** accordingly):
 
 ```
 python src/sent_retrieval/calculate_sentence_retrieval_accuracy.py \
@@ -168,12 +169,21 @@ To extract tables from the documents we will use the TaPaS repository. First the
 python src/data_processing/create_tapas_data.py \
     --db_path=<REPLACE_WITH_PATH_TO_YOUR_DB_FILE> \
     --data_path=<REPLACE_WITH_PATH_TO_YOUR_train.jsonl_FILE> \
-    --out_file=data/tapas/train/
+    --out_file=data/tapas/train/tapas_train.jsonl
+```
+
+And for the dev set:
+
+```
+python src/data_processing/create_tapas_data.py \
+    --db_path=<REPLACE_WITH_PATH_TO_YOUR_DB_FILE> \
+    --data_path=<REPLACE_WITH_PATH_TO_YOUR_dev.jsonl_FILE> \
+    --out_file=data/tapas/train/tapas_dev.jsonl
 ```
 
 Now for the part where we need to use the tapas repo. This repo is used to train a model for retrieving the most relevant tables. Make sure that you have installed Tapas. If not, take a look at the instructions [here](#installing-tapas).
 
-You will also need to download a pretrained Tapas model from [here](https://github.com/google-research/tapas/blob/master/DENSE_TABLE_RETRIEVER.md). The one I used were `tapas_dual_encoder_proj_256_tiny`, due to a shortage of time and compute resources. But if you have the capability and want better results, you might choose a larger model. These instructions will however assume that you used the tiny pretrained model. If you choose another one, then make sure that you replace all instances of `tapas_dual_encoder_proj_256_tiny` with your model, in the following commands.
+You will also need to download a pretrained Tapas model from [here](https://github.com/google-research/tapas/blob/master/DENSE_TABLE_RETRIEVER.md). The one I used were `tapas_dual_encoder_proj_256_tiny`, due to a shortage of time and compute resources. But if you have the capability and want better results, you might choose a larger model. These instructions will however assume that you used the tiny pretrained model. If you choose another one, then make sure that you replace all instances of `tapas_dual_encoder_proj_256_tiny` with the name of your model, in the following commands.
 
 To produce the input Tapas data, run the following command:
 
@@ -302,7 +312,114 @@ python tapas/tapas/scripts/eval_table_retriever.py \
 
 
 ### Step 4: Table cell extraction
-TODO
+For the table cell extraction we will fine-tune the pretrained Tapas model of the Huggingface library.
+
+First the dataset needs to be transformed into the correct format. This is done by running the following script:
+
+```
+python src/data_processing/create_tapas_tables.py \
+    --tapas_train_path=data/tapas/tapas_train.jsonl \
+    --out_path=data/tapas/train_data/ \
+    --table_out_path=data/tapas/tables/
+```
+
+For the dev set:
+
+```
+python src/data_processing/create_tapas_tables.py \
+    --tapas_train_path=data/tapas/dev/tapas_dev.jsonl \
+    --out_path=data/tapas/dev/ \
+    --table_out_path=data/tapas/dev/tables/ \
+```
+
+
+Then we can train the model:
+
+```
+python src/entailment/entailment_with_tapas.py \
+    --train_csv_path=data/tapas/train_data/tapas_data.csv \
+    --tapas_model_name=google/tapas-tiny \
+    --model_path=models/ \
+    --batch_size=32
+```
+
+And evaluate it:
+
+```
+python src/entailment/entailment_with_tapas_predict.py \
+    --table_csv_path=data/tapas/dev/tables/ \
+    --eval_csv_path=data/tapas/dev/tapas_data.csv \
+    --tapas_model_name=google/tapas-tiny \
+    --model_path=models/tapas_model.pth \
+    --batch_size=1
+```
 
 ### Step 5: Claim verification
-TODO
+The last part is to predict the label for the claim. This is done by training a deep neural network with input representations given by the last hidden layer of a pretrained Tapas model for the most relevant table and a pretrained RoBERTa model for the retrieved sentences.
+
+First we need to create the map between the claim id and the label. The following script will create this map for both the train and dev dataset:
+
+```
+python src/data_processing/create_id_label_map.py \
+    --train_data_file=<REPLACE_WITH_PATH_TO_YOUR_train.jsonl_FILE> \
+    --dev_data_file=<REPLACE_WITH_PATH_TO_YOUR_dev.jsonl_FILE> \
+    --train_out_file=data/id_label_map_train.json \
+    --dev_out_file=data/dev/id_label_map_eval.json
+```
+
+Then we need to create the entailment data for the sentences:
+
+```
+python src/data_processing/create_sentence_entailment_data.py \
+    --db_path=<REPLACE_WITH_PATH_TO_YOUR_DB_FILE> \
+    --input_data_file=<REPLACE_WITH_PATH_TO_YOUR_train.jsonl_FILE> \
+    --output_data_file=data/sentence_entailment_train_data.jsonl
+```
+
+And for the dev set:
+
+```
+python src/data_processing/create_sentence_entailment_data.py \
+    --db_path=<REPLACE_WITH_PATH_TO_YOUR_DB_FILE> \
+    --input_data_file=<REPLACE_WITH_PATH_TO_YOUR_dev.jsonl_FILE> \
+    --output_data_file=data/sentence_entailment_eval_data.jsonl
+```
+
+Then we merge the sentence data with the previously created dataset for the tabular data (as used in step 4):
+
+```
+python src/data_processing/merge_table_and_sentence_data.py \
+    --tapas_csv_file=data/tapas/train_data/tapas_data.csv \
+    --sentence_data_file=data/sentence_entailment_train_data.jsonl \
+    --id_label_map_file=data/id_label_map_train.json \
+    --out_file=data/entailment_train_data.csv
+```
+
+For the dev set:
+
+```
+python src/data_processing/merge_table_and_sentence_data.py \
+    --tapas_csv_file=data/tapas/dev/tapas_data.csv \
+    --sentence_data_file=data/sentence_entailment_eval_data.jsonl \
+    --id_label_map_file=data/id_label_map_eval.json \
+    --out_file=data/entailment_eval_data.csv
+```
+
+Now we can train the model:
+
+```
+python src/entailment/train_veracity_prediction_model.py \
+    --train_csv_path=data/entailment_train_data.csv \
+    --batch_size=32 \
+    --out_path=models/
+```
+
+Once it has finished training we can run the evaluation script for evaluating the model:
+
+```
+python src/entailment/eval_veracity_prediction_model.py \
+    --csv_file=data/entailment_eval_data.csv \
+    --model_file=models/veracity_prediction_model.pth \
+    --batch_size=16 \
+    --out_file=data/dev/veracity_prediction_accuracy.json
+```
