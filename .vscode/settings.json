@@ -8,4 +8,10 @@
     "python.analysis.extraPaths": [
         "/home/martin/FEVER2021_SharedTask/FEVEROUS/src"
     ],
+    "files.watcherExclude": {
+        "**/data/**": true,
+        "**/models/**": true,
+        "**/tapas_models/**": true
+      }
+
 }

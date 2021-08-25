@@ -1,7 +1,6 @@
+import os, sys, re, json, jsonlines, nltk, pickle, torch
 from argparse import ArgumentError, ArgumentTypeError
 from collections import OrderedDict, defaultdict
-import os, sys, re, json, jsonlines, nltk, pickle
-
 from typing import List, Union
 from glob import glob
 from tqdm import tqdm
@@ -21,7 +20,49 @@ s_words = set(stopwords.words("english"))
 
 
 def calc_f1(precision: float, recall: float):
+    """Calculates the F1 score
+
+    Args:
+        precision (float): The calculated precision
+        recall (float): The calculated recall
+
+    Returns:
+        float: The F1 score
+    """
+
     return 2 * ((precision * recall) / (precision + recall))
+
+
+def calc_acc(pred_data: List[List[str]], gold_data: List[List[str]]):
+    """Calculates the accuracy, precision and recall
+
+    Args:
+        pred_data (List[List[str]]): The output data from the model
+        gold_data (List[List[str]]): The labeled data to compare with
+
+    Returns:
+        tuple[float, float, float]: Accuracy, recall and precision of the predictions
+    """
+    nr_dp = len(pred_data)
+    nr_correct = 0
+    nr_min_one_corr = 0
+    total_pred = 0
+    total_gold = 0
+    for i, pred_list in enumerate(pred_data):
+        min_one_corr = False
+        for pred_d in pred_list:
+            total_pred += 1
+            total_gold += len(gold_data[i])
+            if pred_d in gold_data[i]:
+                nr_correct += 1
+                min_one_corr = True
+        if min_one_corr:
+            nr_min_one_corr += 1
+
+    accuracy = nr_min_one_corr / nr_dp
+    recall = nr_correct / total_gold
+    precision = nr_correct / total_pred
+    return accuracy, recall, precision
 
 
 def corpus_generator(corpus_path: str):
@@ -64,11 +105,30 @@ def extract_sents(doc_json):
     return sents
 
 
+def get_evidence_docs(doc_json: dict):
+    """Gets the document ids for the documents where the evidence is
+
+    Args:
+        doc_json (dict): A data dict from the FEVEROUS dataset
+
+    Returns:
+        List[str]: A list of the document ids
+    """
+
+    doc_names = []
+    for evidence_content in doc_json["evidence"][0]["content"]:
+        doc_name = evidence_content.split("_")[0]
+        if doc_name not in doc_names:
+            doc_names.append(doc_name)
+    return doc_names
+
+
 def get_tables_from_docs(db: FeverousDB, doc_names: "list[str]"):
     """
         Takes a list of document names and returns a dict with
         a list of tables for each document
     """
+
     result = {}
     for doc_name in doc_names:
         doc_json = db.get_doc_json(doc_name)
@@ -196,6 +256,17 @@ def remove_punctuation(sent):
         return sent[:-1]
     else:
         return sent
+
+
+def sim_matrix(a, b, eps=1e-8):
+    """
+    added eps for numerical stability
+    """
+    a_n, b_n = a.norm(dim=1)[:, None], b.norm(dim=1)[:, None]
+    a_norm = a / torch.max(a_n, eps * torch.ones_like(a_n))
+    b_norm = b / torch.max(b_n, eps * torch.ones_like(b_n))
+    sim_mt = torch.mm(a_norm, b_norm.transpose(0, 1))
+    return sim_mt
 
 
 def stemming_tokenizer(str_input):

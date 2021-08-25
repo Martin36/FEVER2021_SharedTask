@@ -1,19 +1,10 @@
+import argparse, torch
+
 from collections import defaultdict
-import os, sys
-import argparse
 from tqdm import tqdm
-from util.util_funcs import calc_f1, load_json, load_jsonl, store_json
+from util.util_funcs import calc_f1, load_json, store_json
 from transformers import LongformerConfig, LongformerModel, LongformerTokenizerFast
 
-import spacy
-
-DIR_PATH = os.path.abspath(os.getcwd())
-
-FEVEROUS_PATH = DIR_PATH + "/FEVEROUS/src"
-sys.path.insert(0, FEVEROUS_PATH)
-
-from database.feverous_db import FeverousDB
-from utils.wiki_page import WikiPage
 
 stats = defaultdict(int)
 
@@ -39,12 +30,6 @@ def main():
         type=str,
         help="Path to the file to store the results",
     )
-    parser.add_argument(
-        "--tagged_id_map_file",
-        default=None,
-        type=str,
-        help="Path to the file to store the tagged id map",
-    )
 
     args = parser.parse_args()
 
@@ -62,20 +47,44 @@ def main():
         raise RuntimeError(
             "The out file path should include the name of the .json file"
         )
-    if not args.tagged_id_map_file:
-        raise RuntimeError("Invalid tagged id map file path")
-    if ".json" not in args.tagged_id_map_file:
-        raise RuntimeError(
-            "The tagged id map file path should include the name of the .json file"
-        )
 
-    tokenizer = LongformerTokenizerFast.from_pretrained("longformer-base")
-    config = LongformerConfig.from_pretrained("longformer-base")
-    model = LongformerModel(config)
+    tokenizer = LongformerTokenizerFast.from_pretrained("allenai/longformer-base-4096")
+    config = LongformerConfig.from_pretrained("allenai/longformer-base-4096")
+    # gradient_checkpointing=True)
+    device = "cuda"
+    model = LongformerModel(config).to(device)
     test_corpus = load_json("data/corpus/corpora_1.json")
+    max_length = 4096
+    doc_id_to_idx = {}
+    tensor_list = []
+    input_texts = []
+    batch_size = 2
 
-    for doc_id, doc_text in test_corpus.items():
-        inputs = tokenizer(doc_text)
+    with torch.no_grad():
+        for i, (doc_id, doc_text) in enumerate(tqdm(test_corpus.items())):
+            # Use the concat of the doc title and body text as the input
+            input_text = doc_id + ". " + doc_text if doc_id else doc_text
+            input_texts.append(input_text)
+            doc_id_to_idx[doc_id] = i
+            if (i + 1) % batch_size == 0:
+                inputs = tokenizer(
+                    input_texts, return_tensors="pt", padding=True, truncation=True
+                )
+                # inputs = tokenizer(input_texts, padding="max_length",
+                #                 max_length=max_length, return_tensors="pt")
+                # outputs = model(inpu)
+                outputs = model(
+                    input_ids=inputs.input_ids.to(device),
+                    attention_mask=inputs.attention_mask.to(device),
+                )
+
+                tensor_list.append(outputs.pooler_output)
+                del outputs, inputs
+                input_texts = []
+
+    encoded_matrix = torch.cat(tensor_list, dim=0)
+    store_json(doc_id_to_idx, "data/longformer_retrieval/doc_id_to_idx.json", indent=2)
+    torch.save(encoded_matrix, "data/longformer_retrieval/doc_embeddings.pt")
 
 
 if __name__ == "__main__":

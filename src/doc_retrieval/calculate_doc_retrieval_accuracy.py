@@ -1,18 +1,9 @@
 import argparse
 import unicodedata
 from tqdm import tqdm
-from util.util_funcs import calc_f1, load_jsonl, store_json
+from util.util_funcs import calc_f1, load_jsonl, store_json, get_evidence_docs
 
 stats = {"no_match_objs": []}
-
-
-def get_evidence_docs(doc_json):
-    doc_names = []
-    for evidence_content in doc_json["evidence"][0]["content"]:
-        doc_name = evidence_content.split("_")[0]
-        if doc_name not in doc_names:
-            doc_names.append(doc_name)
-    return doc_names
 
 
 def calculate_accuracy(related_docs, data):
