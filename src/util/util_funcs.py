@@ -43,6 +43,7 @@ def calc_acc(pred_data: List[List[str]], gold_data: List[List[str]]):
     Returns:
         tuple[float, float, float]: Accuracy, recall and precision of the predictions
     """
+
     nr_dp = len(pred_data)
     nr_correct = 0
     nr_min_one_corr = 0
@@ -66,13 +67,22 @@ def calc_acc(pred_data: List[List[str]], gold_data: List[List[str]]):
 
 
 def corpus_generator(corpus_path: str):
+    """A generator that returns each document in the corpus
+
+    Args:
+        corpus_path (str): The path to the folder containing the corpus files
+
+    Yields:
+        str: A document in the corpus
+    """
+
     file_paths = glob(corpus_path + "*.json")
     for f_path in file_paths:
         print("Opening file '{}'".format(f_path))
         with open(f_path, "r") as f:
             docs = json.loads(f.read())
             for key in tqdm(docs):
-                yield docs[key]
+                yield docs[key], key
 
 
 def create_table_dict(table):
@@ -98,7 +108,16 @@ def create_table_dict(table):
     return table_dict
 
 
-def extract_sents(doc_json):
+def extract_sents(doc_json: dict):
+    """Extracts the sentences from a document in the DB
+
+    Args:
+        doc_json (dict): A json object from the FEVEROUS DB
+
+    Returns:
+        List[str]: A list of the sentences from the page
+    """
+
     page = WikiPage(doc_json["title"], doc_json)
     sents = [replace_entities(sent.content) for sent in page.get_sentences()]
     sents = [sent.lower() for sent in sents]
@@ -123,7 +142,7 @@ def get_evidence_docs(doc_json: dict):
     return doc_names
 
 
-def get_tables_from_docs(db: FeverousDB, doc_names: "list[str]"):
+def get_tables_from_docs(db: FeverousDB, doc_names: List[str]):
     """
         Takes a list of document names and returns a dict with
         a list of tables for each document
@@ -151,9 +170,10 @@ def load_json(path: str):
     Returns:
         dict: A dict of the json file
     """
-    data = None
+
     if not ".json" in path:
         raise ArgumentError("'path' is not pointing to a json file")
+    data = None
     with open(path) as f:
         data = json.loads(f.read())
     return data
@@ -169,7 +189,7 @@ def load_jsonl(path: str) -> List[dict]:
         ArgumentError: If the provided path does not point to a jsonl file
 
     Returns:
-        list: A list of the jsonl file
+        List[dict]: A list of the jsonl file
     """
 
     if not ".jsonl" in path:
@@ -188,9 +208,10 @@ def load_tfidf(vectorizer_path: str, wm_path: str):
         vectorizer_path (str): Path to the vectorizer .pickle file
         wm_path (str): Path to the word model .pickle file
 
-    Returns:    # TODO
-        [type]: [description]
+    Returns:
+        tuple: A tuple of the tfidfvectorizer and tfidf_wm objects
     """
+
     tfidfvectorizer = pickle.load(open(vectorizer_path, "rb"))
     tfidf_wm = pickle.load(open(wm_path, "rb"))
     return tfidfvectorizer, tfidf_wm
@@ -204,16 +225,11 @@ def store_json(
 ):
     """ Function for storing a dict to a json file
 
-        Parameters
-        ----------
-        data : dict
-            The dict to be stored in the json file
-        file_path : str
-            The path to the file to be created (note: will delete files that have the same name)
-        sort_keys : bool, optional
-            Set to True if the keys in the dict should be sorted before stored (default: False)
-        indent : bool, optional
-            Set this if indentation should be added (default: None)
+    Args:
+        data(dict): The dict to be stored in the json file
+        file_path(str): The path to the file to be created (note: will delete files that have the same name)
+        sort_keys(bool, optional): Set to True if the keys in the dict should be sorted before stored (default: False)
+        indent(bool, optional): Set this if indentation should be added (default: None)
     """
 
     if type(data) != dict and type(data) != defaultdict and type(data) != OrderedDict:
@@ -269,7 +285,7 @@ def sim_matrix(a, b, eps=1e-8):
     return sim_mt
 
 
-def stemming_tokenizer(str_input):
+def stemming_tokenizer(input: str):
     """Converts a string to a list of words, removing special character, stopwords
         and stemming the words
 
@@ -280,7 +296,7 @@ def stemming_tokenizer(str_input):
         list: A list of words
     """
 
-    words = re.sub(r"[^A-Za-z0-9\-]", " ", str_input).lower().split()
+    words = re.sub(r"[^A-Za-z0-9\-]", " ", input).lower().split()
     words = [word for word in words if word not in s_words]
     words = [porter_stemmer.stem(word) for word in words]
     return words

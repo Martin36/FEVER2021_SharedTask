@@ -122,6 +122,7 @@ def main():
     doc_ids = list(doc_id_to_idx.keys())
     data = load_jsonl(args.data_path)[1:]
     data = filter_data(data, test_corpus)
+    gold_evidence = [get_evidence_docs(d) for d in data]
 
     input_texts = []
     batch_size = 8
@@ -179,7 +180,6 @@ def main():
                 top_docs.append(top_doc_ids)
 
     # Calculate the accuracy
-    gold_evidence = [get_evidence_docs(d) for d in data]
     accuracy, recall, precision = calc_acc(top_docs, gold_evidence)
     print("==============================")
     print("========== Results ===========")
@@ -190,9 +190,12 @@ def main():
 
     claim_top_docs_map = {}
     for i, d in enumerate(data):
-        claim_top_docs_map[d["claim"]] = top_docs[i]
+        claim_top_docs_map[d["claim"]] = {
+            "pred_docs": top_docs[i],
+            "gold_docs": gold_evidence[i],
+        }
 
-    store_json(claim_top_docs_map, args.out_file)
+    store_json(claim_top_docs_map, args.out_file, indent=2)
     print("Stored claim top docs map in: {}".format(args.out_file))
 
 

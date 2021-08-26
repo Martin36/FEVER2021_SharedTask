@@ -1,26 +1,15 @@
-import sys
-import os
-import time
-import json
-import math
-import argparse
-import shutil
+import sys, os, time, math, argparse, shutil
+import concurrent.futures
 
 DIR_PATH = os.path.abspath(os.getcwd())
-
 FEVEROUS_PATH = DIR_PATH + "/FEVEROUS/src"
 sys.path.insert(0, FEVEROUS_PATH)
 
 from database.feverous_db import FeverousDB
-from utils.wiki_page import WikiPage
-from util.util_funcs import replace_entities
+from util.util_funcs import extract_sents, store_json
+from util.logger import get_logger
 
-
-def extract_sents(doc_json):
-    page = WikiPage(doc_json["title"], doc_json)
-    sents = [replace_entities(sent.content) for sent in page.get_sentences()]
-    sents = [sent.lower() for sent in sents]
-    return sents
+logger = get_logger()
 
 
 def create_sample_docs(db, ids):
@@ -33,21 +22,7 @@ def create_sample_docs(db, ids):
     return curr_sample_docs
 
 
-def write_corpora_to_file(i, docs, out_path):
-    start_time = time.time()
-    FILE_PATH = out_path + "corpora_{}.json".format(i)
-    with open("{}/{}".format(DIR_PATH, FILE_PATH), "w") as f:
-        f.write(json.dumps(docs, indent=2))
-    print(
-        "Wrote {} docs to {}: {} seconds".format(
-            len(docs.items()), FILE_PATH, time.time() - start_time
-        )
-    )
-
-
 def create_docs_multiple_threads(db, nr_threads, sample_size, sample_doc_ids):
-    import concurrent.futures
-
     with concurrent.futures.ThreadPoolExecutor() as executor:
         thread_samples = int(sample_size / sample_size)
         start_time = time.time()
@@ -62,7 +37,7 @@ def create_docs_multiple_threads(db, nr_threads, sample_size, sample_doc_ids):
     for f in futures:
         sample_docs.update(f.result())
 
-    print(
+    logger.info(
         "Creating {} sample docs with {} threads: {} seconds".format(
             sample_size, sample_size, time.time() - start_time
         )
@@ -76,7 +51,7 @@ def create_corpus(db, args):
     doc_ids = db.get_doc_ids()
 
     if args.verbose:
-        print(
+        logger.info(
             "Nr of docs: {} took {} seconds to fetch".format(
                 len(doc_ids), time.time() - start_time
             )
@@ -90,19 +65,22 @@ def create_corpus(db, args):
         end = (i + 1) * sample_size
         if end > nr_of_docs:
             end = nr_of_docs
-        print("Creating docs for samples {} to {} of {}".format(start, end, nr_of_docs))
+        logger.info(
+            "Creating docs for samples {} to {} of {}".format(start, end, nr_of_docs)
+        )
         start_time = time.time()
         ids = doc_ids[start:end]
         docs = create_sample_docs(db, ids)
         if args.verbose:
-            print(
+            logger.info(
                 "Creating {} docs took: {}".format(
                     sample_size, time.time() - start_time
                 )
             )
-        write_corpora_to_file(i + 1, docs, args.out_path)
+        file_path = args.out_path + "corpora_{}.json".format(i + 1)
+        store_json(docs, file_path, indent=2)
 
-    print("Finished creating corpora files!")
+    logger.info("Finished creating corpora files!")
 
 
 def main():
@@ -155,10 +133,10 @@ def main():
 
     out_dir = os.path.dirname(args.out_path)
     if not os.path.exists(out_dir):
-        print("Output directory doesn't exist. Creating {}".format(out_dir))
+        logger.info("Output directory doesn't exist. Creating {}".format(out_dir))
         os.makedirs(out_dir)
     else:
-        print(
+        logger.info(
             "Output directory already exist. Deleting {} and its contents".format(
                 out_dir
             )

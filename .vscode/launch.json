@@ -35,6 +35,17 @@
             ],
         },
         {
+            "name": "FEVER: Create stemmed corpus",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/data_processing/create_stemmed_corpus.py",
+            "console": "integratedTerminal",
+            "args":[
+                "--corpus_path=data/corpus/",
+                "--out_path=data/stemmed_corpus/"
+            ],
+        },
+        {
             "name": "FEVER: Create corpus stats",
             "type": "python",
             "request": "launch",
