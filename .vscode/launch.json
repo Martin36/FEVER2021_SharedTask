@@ -70,19 +70,35 @@
             ],
         },
         {
-            "name": "FEVER: Create title TF-IDF",
+            "name": "FEVER: Create title TF-IDF (Bigrams)",
             "type": "python",
             "request": "launch",
             "program": "${workspaceFolder}/src/doc_retrieval/create_title_tfidf.py",
             "console": "integratedTerminal",
             "args":[
                 "--corpus_path=data/corpus/",
-                "--out_path=tfidf/",
+                "--vectorizer_out_file=tfidf/title_vectorizer-32bit.pickle",
+                "--wm_out_file=tfidf/title_tfidf_wm-32bit.pickle",
                 "--n_gram_min=2",
                 "--n_gram_max=2"
             ],
         },
         {
+            "name": "FEVER: Create title TF-IDF (1-4 grams)",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/doc_retrieval/create_title_tfidf.py",
+            "console": "integratedTerminal",
+            "args":[
+                "--corpus_path=data/corpus/",
+                "--vectorizer_out_file=tfidf/title_vectorizer-ngram=1-4.pickle",
+                "--wm_out_file=tfidf/title_tfidf_wm-ngram=1-4.pickle",
+                "--n_gram_min=1",
+                "--n_gram_max=4"
+            ],
+        },
+        {
+            // TODO
             "name": "FEVER: Retrieve documents with BM25",
             "type": "python",
             "request": "launch",
@@ -123,6 +139,37 @@
                 "--title_vectorizer_path=tfidf/title_vectorizer-32bit.pickle",
                 "--title_wm_path=tfidf/title_tfidf_wm-32bit.pickle",
                 "--out_file=data/dev/top_docs.jsonl"
+            ],
+        },
+        {
+            "name": "FEVER: Retrieve documents (Dev, title ngrams=1-4)",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/doc_retrieval/document_retrieval.py",
+            "console": "integratedTerminal",
+            "args":[
+                "--doc_id_map_path=tfidf/doc_id_map.json",
+                "--data_path=train_data/dev.jsonl",
+                "--vectorizer_path=tfidf/vectorizer-stemmed-32bit.pickle",
+                "--wm_path=tfidf/tfidf_wm-stemmed-32bit.pickle",
+                "--title_vectorizer_path=tfidf/title_vectorizer-ngram=1-4.pickle",
+                "--title_wm_path=tfidf/title_tfidf_wm-ngram=1-4.pickle",
+                "--out_file=data/dev/top_docs-title-ngram=1-4.jsonl"
+            ],
+        },
+        {
+            "name": "FEVER: Retrieve documents (Dev, title ngrams=1-4, titles only)",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/doc_retrieval/document_retrieval.py",
+            "console": "integratedTerminal",
+            "args":[
+                "--doc_id_map_path=tfidf/doc_id_map.json",
+                "--data_path=train_data/dev.jsonl",
+                "--title_vectorizer_path=tfidf/title_vectorizer-ngram=1-4.pickle",
+                "--title_wm_path=tfidf/title_tfidf_wm-ngram=1-4.pickle",
+                "--out_file=data/dev/top_docs_title-ngram=1-4_titles-only.jsonl",
+                "--only_titles"
             ],
         },
         {
@@ -191,6 +238,18 @@
             ],
         },
         {
+            "name": "FEVER: Retrieve documents using word vectors (Dev)",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/doc_retrieval/doc_retrieval_using_word_vecs.py",
+            "console": "integratedTerminal",
+            "args":[
+                "--corpus_path=data/stemmed_corpus/",
+                "--data_path=train_data/dev.jsonl",
+                "--out_file=data/word_vec_retrieval/top_docs_dev.jsonl",
+            ],
+        },
+        {
             "name": "FEVER: Merge NER and TF-IDF retrieval (Dev)",
             "type": "python",
             "request": "launch",
@@ -224,6 +283,18 @@
                 "--data_path=train_data/dev.jsonl",
                 "--top_k_docs_path=data/dev/top_docs.jsonl",
                 "--out_file=data/dev/doc_retrieval_acc.json"
+            ],
+        },
+        {
+            "name": "FEVER: Calculate document retrieval accuracy (Dev, title ngrams=1-4)",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/doc_retrieval/calculate_doc_retrieval_accuracy.py",
+            "console": "integratedTerminal",
+            "args":[
+                "--data_path=train_data/dev.jsonl",
+                "--top_k_docs_path=data/dev/top_docs-title-ngram=1-4.jsonl",
+                "--out_file=data/dev/doc_retrieval_acc-title-ngram=1-4.json"
             ],
         },
         {

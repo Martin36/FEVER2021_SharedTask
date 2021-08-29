@@ -127,7 +127,6 @@ def main():
         raise RuntimeError("Invalid database path")
     if ".db" not in args.db_path:
         raise RuntimeError("The database path should include the name of the db file")
-
     if not args.out_path:
         raise RuntimeError("Invalid output path")
 

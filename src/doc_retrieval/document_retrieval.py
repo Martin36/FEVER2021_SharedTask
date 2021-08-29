@@ -1,4 +1,5 @@
-import os, time, argparse, math
+import time, math
+from argparse import ArgumentParser, ArgumentError
 from typing import List
 
 from sklearn.metrics.pairwise import cosine_similarity
@@ -17,7 +18,7 @@ from util.logger import get_logger
 logger = get_logger()
 
 
-def get_text_related_docs(
+def get_related_docs(
     data: List[dict],
     doc_id_map: dict,
     batch_size: int,
@@ -40,7 +41,7 @@ def get_text_related_docs(
     """
 
     tfidf_vectorizer, tfidf_wm = load_tfidf(vectorizer_path, wm_path)
-    logger.info("Text TF-IDF shape: {}".format(tfidf_wm.shape))
+    logger.info("TF-IDF shape: {}".format(tfidf_wm.shape))
     nr_of_queries = len(data)
     batches = math.ceil(nr_of_queries / batch_size)
 
@@ -82,70 +83,6 @@ def get_text_related_docs(
     return related_docs
 
 
-def get_title_related_docs(
-    data: List[dict],
-    doc_id_map: dict,
-    batch_size: int,
-    nr_of_docs: int,
-    vectorizer_path: str,
-    wm_path: str,
-) -> List[List[str]]:
-    """Gets the most relevant documents based on the title text, for each claim
-
-    Args:
-        data (List[dict]): The data from the labelled FEVEROUS dataset
-        doc_id_map (dict): A dict with ids as keys and document names as values
-        batch_size (int): The size of each batch
-        nr_of_docs (int): The number of documents to retrieve for each claim
-        vectorizer_path (str): The path to the vectorizer file
-        wm_path (str): The path to the word model file
-
-    Returns:
-        List[List[str]]: A list of the top documents for each claim
-    """
-
-    title_vectorizer, title_wm = load_tfidf(vectorizer_path, wm_path)
-    nr_of_queries = len(data)
-    batches = math.ceil(nr_of_queries / batch_size)
-
-    related_titles = []
-
-    start_time = time.time()
-
-    for batch_nr in range(batches):
-        batch_start_time = time.time()
-        logger.info("Processing batch {} of {}".format(batch_nr + 1, batches))
-
-        start = batch_nr * batch_size
-        end = (batch_nr + 1) * batch_size
-        if end > nr_of_queries:
-            end = nr_of_queries
-
-        queries = [data[i]["claim"] for i in range(start, end)]
-
-        query_tfidf = title_vectorizer.transform(queries)
-        cosine_similarities = cosine_similarity(query_tfidf, title_wm)
-        logger.info(
-            "Calculating cosine similarity for batch {} took {} seconds".format(
-                batch_nr + 1, time.time() - batch_start_time
-            )
-        )
-
-        for i in range(cosine_similarities.shape[0]):
-            related_titles_indices = cosine_similarities[i].argsort()[
-                : -nr_of_docs - 1 : -1
-            ]
-            related_titles.append([doc_id_map[i] for i in related_titles_indices])
-
-    logger.info(
-        "Total time for consine similarities {} seconds".format(
-            time.time() - start_time
-        )
-    )
-    del title_vectorizer, title_wm
-    return related_titles
-
-
 def get_top_k_docs(
     data,
     doc_id_map_path,
@@ -155,14 +92,37 @@ def get_top_k_docs(
     wm_path,
     title_vectorizer_path,
     title_wm_path,
+    only_titles,
+    only_text,
 ):
     doc_id_map = load_json(doc_id_map_path)
 
-    text_related_docs = get_text_related_docs(
+    if only_text:
+        logger.info("Retrieving documents using text similarity...")
+        text_related_docs = get_related_docs(
+            data, doc_id_map, batch_size, nr_of_docs * 2, vectorizer_path, wm_path
+        )
+        return text_related_docs
+
+    if only_titles:
+        logger.info("Retrieving documents using title similarity...")
+        title_related_docs = get_related_docs(
+            data,
+            doc_id_map,
+            batch_size,
+            nr_of_docs * 2,
+            title_vectorizer_path,
+            title_wm_path,
+        )
+        return title_related_docs
+
+    logger.info("Retrieving documents using text similarity...")
+    text_related_docs = get_related_docs(
         data, doc_id_map, batch_size, nr_of_docs, vectorizer_path, wm_path
     )
 
-    title_related_docs = get_title_related_docs(
+    logger.info("Retrieving documents using title similarity...")
+    title_related_docs = get_related_docs(
         data, doc_id_map, batch_size, nr_of_docs, title_vectorizer_path, title_wm_path
     )
 
@@ -179,7 +139,7 @@ def get_top_k_docs(
 
 
 def main():
-    parser = argparse.ArgumentParser(
+    parser = ArgumentParser(
         description="Retrieves the most relevant documents for the claims in the dataset"
     )
     parser.add_argument(
@@ -224,43 +184,57 @@ def main():
         type=int,
         help="The number of documents to retrieve for each claim",
     )
+    parser.add_argument(
+        "--only_titles",
+        default=False,
+        action="store_true",
+        help="Should only the title TF-IDF be used for retrieving documents?",
+    )
+    parser.add_argument(
+        "--only_text",
+        default=False,
+        action="store_true",
+        help="Should only the text TF-IDF be used for retrieving documents?",
+    )
 
     args = parser.parse_args()
 
     if not args.doc_id_map_path:
-        raise RuntimeError("Invalid doc id map path")
+        raise ArgumentError("Invalid doc id map path")
     if ".json" not in args.doc_id_map_path:
-        raise RuntimeError(
+        raise ArgumentError(
             "The doc id map path should include the name of the .json file"
         )
     if not args.data_path:
-        raise RuntimeError("Invalid data path")
+        raise ArgumentError("Invalid data path")
     if ".json" not in args.data_path:
-        raise RuntimeError("The data path should include the name of the .jsonl file")
-    if not args.vectorizer_path:
-        raise RuntimeError("Invalid vectorizer path")
-    if ".pickle" not in args.vectorizer_path:
-        raise RuntimeError(
-            "The vectorizer path should include the name of the .pickle file"
-        )
-    if not args.wm_path:
-        raise RuntimeError("Invalid word model path")
-    if ".pickle" not in args.wm_path:
-        raise RuntimeError(
-            "The vectorizer path should include the name of the .pickle file"
-        )
-    if not args.title_vectorizer_path:
-        raise RuntimeError("Invalid title vectorizer path")
-    if ".pickle" not in args.title_vectorizer_path:
-        raise RuntimeError(
-            "The title vectorizer path should include the name of the .pickle file"
-        )
-    if not args.title_wm_path:
-        raise RuntimeError("Invalid title word model path")
-    if ".pickle" not in args.title_wm_path:
-        raise RuntimeError(
-            "The title vectorizer path should include the name of the .pickle file"
-        )
+        raise ArgumentError("The data path should include the name of the .jsonl file")
+    if not args.only_titles:
+        if not args.vectorizer_path:
+            raise ArgumentError("Invalid vectorizer path")
+        if ".pickle" not in args.vectorizer_path:
+            raise ArgumentError(
+                "The vectorizer path should include the name of the .pickle file"
+            )
+        if not args.wm_path:
+            raise ArgumentError("Invalid word model path")
+        if ".pickle" not in args.wm_path:
+            raise ArgumentError(
+                "The vectorizer path should include the name of the .pickle file"
+            )
+    if not args.only_text:
+        if not args.title_vectorizer_path:
+            raise ArgumentError("Invalid title vectorizer path")
+        if ".pickle" not in args.title_vectorizer_path:
+            raise ArgumentError(
+                "The title vectorizer path should include the name of the .pickle file"
+            )
+        if not args.title_wm_path:
+            raise ArgumentError("Invalid title word model path")
+        if ".pickle" not in args.title_wm_path:
+            raise ArgumentError(
+                "The title vectorizer path should include the name of the .pickle file"
+            )
 
     data = load_jsonl(args.data_path)[1:]
 
@@ -274,6 +248,8 @@ def main():
         args.wm_path,
         args.title_vectorizer_path,
         args.title_wm_path,
+        args.only_titles,
+        args.only_text,
     )
     logger.info("Finished getting the top k docs")
 

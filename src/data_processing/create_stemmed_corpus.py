@@ -63,7 +63,7 @@ def main():
             out_file = args.out_path + file_name
             futures.append(executor.submit(created_stemmed_corpus, f_path, out_file))
 
-        for i, future in enumerate(concurrent.futures.as_completed()):
+        for i, future in enumerate(concurrent.futures.as_completed(futures)):
             logger.info("Finished processing corpus nr {}".format(i))
 
     logger.info(

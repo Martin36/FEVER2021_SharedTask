@@ -2,6 +2,9 @@ import argparse
 import unicodedata
 from tqdm import tqdm
 from util.util_funcs import calc_f1, load_jsonl, store_json, get_evidence_docs
+from util.logger import get_logger
+
+logger = get_logger()
 
 stats = {"no_match_objs": []}
 
@@ -104,7 +107,11 @@ def main():
     data = load_jsonl(args.data_path)[1:]
     related_docs = load_jsonl(args.top_k_docs_path)
     accuracy, precision, recall, f1 = calculate_accuracy(related_docs, data)
-    print("Accuracy for top k docs is: {}".format(accuracy))
+    logger.info("====== Results for top k docs =======")
+    logger.info("Accuracy: {}".format(accuracy))
+    logger.info("Precision: {}".format(precision))
+    logger.info("Recall: {}".format(recall))
+    logger.info("F1: {}".format(f1))
 
     stats["accuracy"] = accuracy
     stats["precision"] = precision
@@ -112,7 +119,7 @@ def main():
     stats["f1"] = f1
 
     store_json(stats, args.out_file, indent=2)
-    print("Stored results in '{}'".format(args.out_file))
+    logger.info("Stored results in '{}'".format(args.out_file))
 
 
 if __name__ == "__main__":

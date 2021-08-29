@@ -100,7 +100,8 @@ To create the TF-IDF matrix for the titles, run the following code:
 ```
 python src/doc_retrieval/create_title_tfidf.py \
     --corpus_path=data/corpus/ \
-    --out_path=tfidf/ \
+    --vectorizer_out_file=tfidf/title_vectorizer-32bit.pickle \
+    --wm_out_file=tfidf/title_tfidf_wm-32bit.pickle \
     --n_gram_min=2 \
     --n_gram_max=2
 ```

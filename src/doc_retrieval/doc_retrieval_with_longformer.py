@@ -1,8 +1,7 @@
 import argparse, torch
-
 from collections import defaultdict
 from tqdm import tqdm
-from util.util_funcs import calc_f1, load_json, store_json
+from util.util_funcs import load_json, store_json
 from transformers import LongformerConfig, LongformerModel, LongformerTokenizerFast
 
 

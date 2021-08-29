@@ -66,23 +66,33 @@ def calc_acc(pred_data: List[List[str]], gold_data: List[List[str]]):
     return accuracy, recall, precision
 
 
-def corpus_generator(corpus_path: str):
+def corpus_generator(corpus_path: str, testing=False, only_doc=False, only_key=False):
     """A generator that returns each document in the corpus
 
     Args:
         corpus_path (str): The path to the folder containing the corpus files
-
+        testing (bool, optional): If True, the generator will only yield a small part of the corpus
+        only_doc (bool, optional): If True, the generator will only return the document texts
+        only_key (bool, optional): If True, the generator will only return the document titles
     Yields:
         str: A document in the corpus
     """
 
-    file_paths = glob(corpus_path + "*.json")
+    if testing:
+        file_paths = glob(corpus_path + "corpora_1.json")
+    else:
+        file_paths = glob(corpus_path + "*.json")
     for f_path in file_paths:
         print("Opening file '{}'".format(f_path))
         with open(f_path, "r") as f:
             docs = json.loads(f.read())
             for key in tqdm(docs):
-                yield docs[key], key
+                if only_doc:
+                    yield docs[key]
+                elif only_key:
+                    yield key
+                else:
+                    yield docs[key], key
 
 
 def create_table_dict(table):
@@ -272,6 +282,10 @@ def remove_punctuation(sent):
         return sent[:-1]
     else:
         return sent
+
+
+def remove_stopwords(tokens):
+    return [t for t in tokens if t not in s_words]
 
 
 def sim_matrix(a, b, eps=1e-8):
