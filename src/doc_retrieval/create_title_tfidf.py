@@ -2,7 +2,12 @@ import os, time, pickle
 import numpy as np
 from argparse import ArgumentError, ArgumentParser
 from sklearn.feature_extraction.text import TfidfVectorizer
-from util.util_funcs import stemming_tokenizer, corpus_generator
+from util.util_funcs import (
+    create_doc_id_map,
+    stemming_tokenizer,
+    corpus_generator,
+    store_json,
+)
 from util.logger import get_logger
 
 logger = get_logger()
@@ -66,6 +71,12 @@ def main():
         help="Path to the file in which to store the word model",
     )
     parser.add_argument(
+        "--doc_id_map_path",
+        default=None,
+        type=str,
+        help="Path to the file in which to store the doc id map",
+    )
+    parser.add_argument(
         "--n_gram_min",
         default=1,
         type=int,
@@ -113,6 +124,11 @@ def main():
     logger.info("Stored TF-IDF vectorizer in '{}'".format(args.vectorizer_out_file))
     pickle.dump(tfidf_wm, open(args.wm_out_file, "wb"))
     logger.info("Stored TF-IDF word model in '{}'".format(args.wm_out_file))
+
+    if args.doc_id_map_path:
+        doc_id_map = create_doc_id_map(args.corpus_path)
+        store_json(doc_id_map, args.doc_id_map_path)
+        logger.info("Stored doc id map in '{}'".format(args.doc_id_map_path))
 
 
 if __name__ == "__main__":

@@ -1,7 +1,7 @@
 import time, math
 from argparse import ArgumentParser, ArgumentError
+from tqdm import tqdm
 from typing import List
-
 from sklearn.metrics.pairwise import cosine_similarity
 
 from util.util_funcs import (
@@ -83,6 +83,24 @@ def get_related_docs(
     return related_docs
 
 
+def get_entity_matched_docs(doc_id_map: List[str], data: List[dict]):
+    """Gets the documents where the document name is contained inside the claim
+
+    Args:
+        doc_id_map (List[str]): A list of document names
+        data (List[dict]): One of the FEVEROUS datasets
+
+    Returns:
+        List[List[str]]: A list of lists of the related documents
+    """
+    claims = [d["claim"] for d in data]
+    related_docs = []
+    for claim in tqdm(claims):
+        claim_docs = [doc_id for doc_id in doc_id_map if doc_id in claim]
+        related_docs.append(claim_docs)
+    return related_docs
+
+
 def get_top_k_docs(
     data,
     doc_id_map_path,
@@ -94,8 +112,13 @@ def get_top_k_docs(
     title_wm_path,
     only_titles,
     only_text,
+    use_entity_matching,
 ):
     doc_id_map = load_json(doc_id_map_path)
+
+    if use_entity_matching:
+        logger.info("Retrieving documents using entity matching...")
+        entity_matched_docs = get_entity_matched_docs(doc_id_map, data)
 
     if only_text:
         logger.info("Retrieving documents using text similarity...")
@@ -127,6 +150,18 @@ def get_top_k_docs(
     )
 
     merged_docs = [unique(x + y) for x, y in zip(text_related_docs, title_related_docs)]
+
+    if use_entity_matching:
+        result_docs = []
+        total_nr_docs = nr_of_docs * 2
+        for docs in entity_matched_docs:
+            if len(docs) < total_nr_docs:
+                current_docs = docs + merged_docs[: total_nr_docs - len(docs)]
+                assert len(current_docs) == total_nr_docs
+                result_docs.append(current_docs)
+            else:
+                result_docs.append(docs)
+        return result_docs
 
     return merged_docs
 
@@ -196,6 +231,12 @@ def main():
         action="store_true",
         help="Should only the text TF-IDF be used for retrieving documents?",
     )
+    parser.add_argument(
+        "--use_entity_matching",
+        default=False,
+        action="store_true",
+        help="If this parameter is set, then it will first look for documents whose name is contained in the claim",
+    )
 
     args = parser.parse_args()
 
@@ -250,6 +291,7 @@ def main():
         args.title_wm_path,
         args.only_titles,
         args.only_text,
+        args.use_entity_matching,
     )
     logger.info("Finished getting the top k docs")
 

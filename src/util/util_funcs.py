@@ -82,6 +82,7 @@ def corpus_generator(corpus_path: str, testing=False, only_doc=False, only_key=F
         file_paths = glob(corpus_path + "corpora_1.json")
     else:
         file_paths = glob(corpus_path + "*.json")
+    file_paths = sorted(file_paths)
     for f_path in file_paths:
         print("Opening file '{}'".format(f_path))
         with open(f_path, "r") as f:
@@ -93,6 +94,14 @@ def corpus_generator(corpus_path: str, testing=False, only_doc=False, only_key=F
                     yield key
                 else:
                     yield docs[key], key
+
+
+def create_doc_id_map(corpus_path: str):
+    doc_id_map = []
+    corpus = corpus_generator(corpus_path, only_key=True)
+    for key in corpus:
+        doc_id_map.append(key)
+    return doc_id_map
 
 
 def create_table_dict(table):
@@ -228,7 +237,7 @@ def load_tfidf(vectorizer_path: str, wm_path: str):
 
 
 def store_json(
-    data: Union[dict, defaultdict, OrderedDict],
+    data: Union[dict, list, defaultdict, OrderedDict],
     file_path: str,
     sort_keys=False,
     indent=None,
@@ -236,13 +245,18 @@ def store_json(
     """ Function for storing a dict to a json file
 
     Args:
-        data(dict): The dict to be stored in the json file
+        data(dict): The dict or list to be stored in the json file
         file_path(str): The path to the file to be created (note: will delete files that have the same name)
         sort_keys(bool, optional): Set to True if the keys in the dict should be sorted before stored (default: False)
         indent(bool, optional): Set this if indentation should be added (default: None)
     """
 
-    if type(data) != dict and type(data) != defaultdict and type(data) != OrderedDict:
+    if (
+        type(data) != dict
+        and type(data) != list
+        and type(data) != defaultdict
+        and type(data) != OrderedDict
+    ):
         raise ArgumentTypeError("'data' needs to be a dict")
     if ".json" not in file_path:
         raise ArgumentError("'file_path' needs to include the name of the output file")

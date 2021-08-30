@@ -1,8 +1,11 @@
 import argparse
 from collections import defaultdict, OrderedDict
-from util.util_funcs import load_jsonl, store_json
+from util.util_funcs import get_evidence_docs, load_jsonl, store_json
 import os
 from tqdm import tqdm
+from util.logger import get_logger
+
+logger = get_logger()
 
 WRITE_TO_FILE = True
 
@@ -43,7 +46,7 @@ def main():
 
     out_dir = os.path.dirname(args.out_path)
     if not os.path.exists(out_dir):
-        print("Output directory doesn't exist. Creating {}".format(out_dir))
+        logger.info("Output directory doesn't exist. Creating {}".format(out_dir))
         os.makedirs(out_dir)
 
     train_data = load_jsonl(args.train_data_path)[1:]
@@ -52,6 +55,7 @@ def main():
     table_cell_evidence_dist = defaultdict(int)
     sent_evidence_dist = defaultdict(int)
     stats = defaultdict(int)
+    evidence_doc_title_word_len_dist = defaultdict(int)
 
     for d in tqdm(train_data):
         stats["total_samples"] += 1
@@ -90,6 +94,11 @@ def main():
         table_cell_evidence_dist[nr_of_cells] += 1
         sent_evidence_dist[nr_of_sents] += 1
 
+        evidence_docs = get_evidence_docs(d)
+        for doc in evidence_docs:
+            words = doc.split(" ")
+            evidence_doc_title_word_len_dist[len(words)] += 1
+
     for d in tqdm(dev_data):
         stats["total_samples"] += 1
         stats["dev_samples"] += 1
@@ -127,13 +136,21 @@ def main():
         table_cell_evidence_dist[nr_of_cells] += 1
         sent_evidence_dist[nr_of_sents] += 1
 
+        evidence_docs = get_evidence_docs(d)
+        for doc in evidence_docs:
+            words = doc.split(" ")
+            evidence_doc_title_word_len_dist[len(words)] += 1
+
     table_cell_evidence_dist = OrderedDict(sorted(table_cell_evidence_dist.items()))
     sent_evidence_dist = OrderedDict(sorted(sent_evidence_dist.items()))
+    evidence_doc_title_word_len_dist = OrderedDict(
+        sorted(evidence_doc_title_word_len_dist.items())
+    )
 
     if WRITE_TO_FILE:
         table_cell_evidence_dist_file = out_dir + "/table_cell_evidence_dist.json"
         store_json(table_cell_evidence_dist, table_cell_evidence_dist_file)
-        print(
+        logger.info(
             "Stored table cell evidence distribution in '{}'".format(
                 table_cell_evidence_dist_file
             )
@@ -141,15 +158,27 @@ def main():
 
         sent_evidence_dist_file = out_dir + "/sent_evidence_dist.json"
         store_json(sent_evidence_dist, sent_evidence_dist_file)
-        print(
+        logger.info(
             "Stored sentence evidence distribution in '{}'".format(
                 sent_evidence_dist_file
             )
         )
 
+        evidence_doc_title_word_len_dist_file = (
+            out_dir + "/evidence_doc_title_word_len_dist.json"
+        )
+        store_json(
+            evidence_doc_title_word_len_dist, evidence_doc_title_word_len_dist_file
+        )
+        logger.info(
+            "Stored evidence document title word length distribution in '{}'".format(
+                evidence_doc_title_word_len_dist_file
+            )
+        )
+
         stats_file = out_dir + "/stats.json"
         store_json(stats, stats_file, sort_keys=True)
-        print("Stored stats in '{}'".format(stats_file))
+        logger.info("Stored stats in '{}'".format(stats_file))
 
 
 if __name__ == "__main__":

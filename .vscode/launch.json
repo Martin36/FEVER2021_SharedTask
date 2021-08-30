@@ -64,8 +64,7 @@
             "program": "${workspaceFolder}/src/doc_retrieval/create_tfidf.py",
             "console": "integratedTerminal",
             "args":[
-                "--use_stemming",
-                "--corpus_path=data/corpus/",
+                "--corpus_path=data/stemmed_corpus/",
                 "--out_path=tfidf/"
             ],
         },
@@ -173,6 +172,47 @@
             ],
         },
         {
+            "name": "FEVER: Retrieve documents with entity matching (Dev, title ngrams=1-4)",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/doc_retrieval/document_retrieval.py",
+            "console": "integratedTerminal",
+            "args":[
+                "--doc_id_map_path=tfidf/doc_id_map.json",
+                "--data_path=train_data/dev.jsonl",
+                "--vectorizer_path=tfidf/vectorizer-stemmed-32bit.pickle",
+                "--wm_path=tfidf/tfidf_wm-stemmed-32bit.pickle",
+                "--title_vectorizer_path=tfidf/title_vectorizer-ngram=1-4.pickle",
+                "--title_wm_path=tfidf/title_tfidf_wm-ngram=1-4.pickle",
+                "--out_file=data/dev/top_docs_title-ngram=1-4_entity_matching.jsonl",
+                "--use_entity_matching"
+            ],
+        },
+        {
+            "name": "FEVER: Retrieve entity matched docs (Train)",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/doc_retrieval/document_retrieval_entity_matching.py",
+            "console": "integratedTerminal",
+            "args":[
+                "--doc_id_map_path=tfidf/doc_id_map.json",
+                "--data_path=train_data/train.jsonl",
+                "--out_file=data/train/top_docs_entity_matching.jsonl",
+            ],
+        },
+        {
+            "name": "FEVER: Retrieve entity matched docs (Dev)",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/doc_retrieval/document_retrieval_entity_matching.py",
+            "console": "integratedTerminal",
+            "args":[
+                "--doc_id_map_path=tfidf/doc_id_map.json",
+                "--data_path=train_data/dev.jsonl",
+                "--out_file=data/dev/top_docs_entity_matching.jsonl",
+            ],
+        },
+        {
             "name": "FEVER: NER document retrieval (Train)",
             "type": "python",
             "request": "launch",
@@ -238,6 +278,7 @@
             ],
         },
         {
+            // TODO
             "name": "FEVER: Retrieve documents using word vectors (Dev)",
             "type": "python",
             "request": "launch",
@@ -295,6 +336,30 @@
                 "--data_path=train_data/dev.jsonl",
                 "--top_k_docs_path=data/dev/top_docs-title-ngram=1-4.jsonl",
                 "--out_file=data/dev/doc_retrieval_acc-title-ngram=1-4.json"
+            ],
+        },
+        {
+            "name": "FEVER: Calculate document retrieval accuracy (Dev, title ngrams=1-4, titles only)",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/doc_retrieval/calculate_doc_retrieval_accuracy.py",
+            "console": "integratedTerminal",
+            "args":[
+                "--data_path=train_data/dev.jsonl",
+                "--top_k_docs_path=data/dev/top_docs_title-ngram=1-4_titles-only.jsonl",
+                "--out_file=data/dev/doc_retrieval_acc_title-ngram=1-4_titles-only.json"
+            ],
+        },
+        {
+            "name": "FEVER: Calculate document retrieval accuracy with entity matching (Dev, title ngrams=1-4)",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/doc_retrieval/calculate_doc_retrieval_accuracy.py",
+            "console": "integratedTerminal",
+            "args":[
+                "--data_path=train_data/dev.jsonl",
+                "--top_k_docs_path=data/dev/top_docs_entity_matching.jsonl",
+                "--out_file=data/dev/doc_retrieval_acc_entity_matching.json"
             ],
         },
         {

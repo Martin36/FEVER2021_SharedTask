@@ -40,7 +40,7 @@ def main():
             "The term counts file path should include the name of the .json file"
         )
 
-    corpus = corpus_generator(args.corpus_path)
+    corpus = corpus_generator(args.corpus_path, only_doc=True)
     doc_len_dist = defaultdict(int)
     term_counts = defaultdict(int)
     for c in corpus:

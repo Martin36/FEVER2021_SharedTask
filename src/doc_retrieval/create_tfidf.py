@@ -1,14 +1,15 @@
-import os
-import time
-import json
-import argparse
-import pickle
+import os, time, argparse, pickle
 import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
-from glob import glob
-from tqdm import tqdm
+from util.util_funcs import (
+    create_doc_id_map,
+    stemming_tokenizer,
+    corpus_generator,
+    store_json,
+)
+from util.logger import get_logger
 
-from util.util_funcs import stemming_tokenizer, corpus_generator, store_json
+logger = get_logger()
 
 
 def create_tfidf(use_stemming, corpus_path):
@@ -18,7 +19,7 @@ def create_tfidf(use_stemming, corpus_path):
     min_df = 2
 
     start_time = time.time()
-    corpus = corpus_generator(corpus_path)
+    corpus = corpus_generator(corpus_path, only_doc=True)
     if use_stemming:
         tfidfvectorizer = TfidfVectorizer(
             tokenizer=stemming_tokenizer, dtype=np.float32, max_df=max_df, min_df=min_df
@@ -31,7 +32,7 @@ def create_tfidf(use_stemming, corpus_path):
         )
         tfidf_wm = tfidfvectorizer.fit_transform(corpus)
 
-    print(
+    logger.info(
         "Creating TF-IDF matrix {}took {} seconds".format(
             "with stemming " if use_stemming else "", time.time() - start_time
         )
@@ -41,6 +42,7 @@ def create_tfidf(use_stemming, corpus_path):
 
 
 def store_tfidf(tfidfvectorizer, tfidf_wm, out_path, use_stemming):
+    # TODO: Change this to get file names from args instead
     pickle.dump(
         tfidfvectorizer,
         open(
@@ -59,17 +61,6 @@ def store_tfidf(tfidfvectorizer, tfidf_wm, out_path, use_stemming):
             "wb",
         ),
     )
-
-
-def create_doc_id_map(corpus_path):
-    doc_id_map = []
-    file_paths = glob(corpus_path + "*.json")
-    for f_path in file_paths:
-        with open(f_path, "r") as f:
-            docs = json.loads(f.read())
-            for key in docs:
-                doc_id_map.append(key)
-    return doc_id_map
 
 
 def main():
@@ -98,22 +89,22 @@ def main():
 
     out_dir = os.path.dirname(args.out_path)
     if not os.path.exists(out_dir):
-        print("Output directory doesn't exist. Creating {}".format(out_dir))
+        logger.info("Output directory doesn't exist. Creating {}".format(out_dir))
         os.makedirs(out_dir)
 
-    print(
+    logger.info(
         "Creating TF-IDF matrix {}".format("with stemming" if args.use_stemming else "")
     )
     tfidfvectorizer, tfidf_wm = create_tfidf(args.use_stemming, args.corpus_path)
-    print("Storing TF-IDF matrix as pickle")
+    logger.info("Storing TF-IDF matrix as pickle")
     store_tfidf(tfidfvectorizer, tfidf_wm, args.out_path, args.use_stemming)
 
-    print("Creating doc id map")
+    logger.info("Creating doc id map")
     doc_id_map = create_doc_id_map(args.corpus_path)
-    print("Storing doc id map")
+    logger.info("Storing doc id map")
     doc_id_map_file = args.out_path + "doc_id_map.json"
     store_json(doc_id_map, doc_id_map_file)
-    print("Doc id map stored")
+    logger.info("Doc id map stored")
 
 
 if __name__ == "__main__":
