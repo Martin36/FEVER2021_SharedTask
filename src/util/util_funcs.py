@@ -29,7 +29,8 @@ def calc_f1(precision: float, recall: float):
     Returns:
         float: The F1 score
     """
-
+    if precision + recall == 0:
+        return 0
     return 2 * ((precision * recall) / (precision + recall))
 
 

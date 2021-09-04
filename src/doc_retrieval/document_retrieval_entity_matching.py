@@ -22,15 +22,10 @@ def get_entity_matched_docs(doc_id_map: List[str], data: List[dict]):
 
     claims = [d["claim"] for d in data]
     related_docs = []
-    # counter = 0
     for claim in tqdm(claims):
-        # Add surrounding spaces to be able to match only whole words
-        claim = " " + claim + " "
-        # if counter == 10: break
         claim_docs = [doc_id for doc_id in doc_id_map if doc_id in claim]
         claim_docs = [doc for doc in claim_docs if len(doc) > 3]
         related_docs.append(claim_docs)
-        # counter += 1
     return related_docs
 
 
@@ -79,7 +74,6 @@ def main():
 
     result = []
     for i, d in enumerate(data):
-        # if i == 10: break
         obj = {
             "id": d["id"] if "id" in d else i,
             "claim": d["claim"],

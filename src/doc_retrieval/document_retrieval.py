@@ -3,7 +3,7 @@ from argparse import ArgumentParser, ArgumentError
 from tqdm import tqdm
 from typing import List
 from sklearn.metrics.pairwise import cosine_similarity
-
+from doc_retrieval.calculate_doc_retrieval_accuracy import calculate_accuracy
 from util.util_funcs import (
     load_json,
     load_jsonl,
@@ -12,10 +12,11 @@ from util.util_funcs import (
     store_jsonl,
     unique,
 )
-
 from util.logger import get_logger
 
 logger = get_logger()
+
+TESTING = False
 
 
 def get_related_docs(
@@ -62,17 +63,18 @@ def get_related_docs(
 
         query_tfidf = tfidf_vectorizer.transform(queries)
         cosine_similarities = cosine_similarity(query_tfidf, tfidf_wm)
-        logger.info(
-            "Calculating cosine similarity between doc and claim for batch {} took {} seconds".format(
-                batch_nr + 1, time.time() - batch_start_time
-            )
-        )
 
         for i in range(cosine_similarities.shape[0]):
             related_docs_indices = cosine_similarities[i].argsort()[
                 : -nr_of_docs - 1 : -1
             ]
             related_docs.append([doc_id_map[i] for i in related_docs_indices])
+
+        logger.info(
+            "Calculating cosine similarity between doc and claim for batch {} took {} seconds".format(
+                batch_nr + 1, time.time() - batch_start_time
+            )
+        )
 
     logger.info(
         "Total time for consine similarities between docs and claims: {} seconds".format(
@@ -93,6 +95,7 @@ def get_entity_matched_docs(doc_id_map: List[str], data: List[dict]):
     Returns:
         List[List[str]]: A list of lists of the related documents
     """
+
     claims = [d["claim"] for d in data]
     related_docs = []
     for claim in tqdm(claims):
@@ -102,23 +105,40 @@ def get_entity_matched_docs(doc_id_map: List[str], data: List[dict]):
 
 
 def get_top_k_docs(
-    data,
-    doc_id_map_path,
-    batch_size,
-    nr_of_docs,
-    vectorizer_path,
-    wm_path,
-    title_vectorizer_path,
-    title_wm_path,
-    only_titles,
-    only_text,
-    use_entity_matching,
+    data: List[dict],
+    doc_id_map_path: str,
+    batch_size: int,
+    nr_of_docs: int,
+    vectorizer_path: str,
+    wm_path: str,
+    title_vectorizer_path: str,
+    title_wm_path: str,
+    only_titles: bool,
+    only_text: bool,
+    use_entity_matching: bool,
+    entity_matched_docs_path: str,
 ):
-    doc_id_map = load_json(doc_id_map_path)
+    """Retrieves the top k matches for all the claims in the dataset
 
-    if use_entity_matching:
-        logger.info("Retrieving documents using entity matching...")
-        entity_matched_docs = get_entity_matched_docs(doc_id_map, data)
+    Args:
+        data (List[dict]): The FEVEROUS dataset (e.g. train.jsonl)
+        doc_id_map_path (str): The path to the doc id map file
+        batch_size (int): The size of each batch
+        nr_of_docs (int): The number of documents to retrieve
+        vectorizer_path (str): The path to the text vectorizer file
+        wm_path (str): The path to the text word model file
+        title_vectorizer_path (str): The path to the title vectorizer file
+        title_wm_path (str): The path to the title word model file
+        only_titles (bool): If True, only the titles will be used to retrieve documents
+        only_text (bool): If True, only the document text will be used to retrieve documents
+        use_entity_matching (bool): If True, will match with the document titles in the claims
+        entity_matched_docs_path (str): The file path to the entity matched docs
+
+    Returns:
+        List[List[str]]: A list to the top document titles for each claim
+    """
+
+    doc_id_map = load_json(doc_id_map_path)
 
     if only_text:
         logger.info("Retrieving documents using text similarity...")
@@ -139,6 +159,21 @@ def get_top_k_docs(
         )
         return title_related_docs
 
+    if use_entity_matching:
+        logger.info("Retrieving documents using entity matching...")
+        entity_matched_docs = load_jsonl(entity_matched_docs_path)
+        if TESTING:
+            entity_matched_docs = entity_matched_docs[:batch_size]
+        entity_related_docs = []
+        assert len(entity_matched_docs) == len(
+            data
+        ), "The lenght of the entity matched docs need to be the same as the length of the dataset"
+        for d in entity_matched_docs:
+            # Assuming here that longer matched document titles are more relevant than shorter ones
+            docs = sorted(d["docs"], key=len, reverse=True)
+            docs = docs[:nr_of_docs]
+            entity_related_docs.append(docs)
+
     logger.info("Retrieving documents using text similarity...")
     text_related_docs = get_related_docs(
         data, doc_id_map, batch_size, nr_of_docs, vectorizer_path, wm_path
@@ -149,19 +184,25 @@ def get_top_k_docs(
         data, doc_id_map, batch_size, nr_of_docs, title_vectorizer_path, title_wm_path
     )
 
-    merged_docs = [unique(x + y) for x, y in zip(text_related_docs, title_related_docs)]
-
     if use_entity_matching:
         result_docs = []
         total_nr_docs = nr_of_docs * 2
-        for docs in entity_matched_docs:
-            if len(docs) < total_nr_docs:
-                current_docs = docs + merged_docs[: total_nr_docs - len(docs)]
-                assert len(current_docs) == total_nr_docs
-                result_docs.append(current_docs)
-            else:
-                result_docs.append(docs)
+        for i, docs in enumerate(entity_related_docs):
+            nr_docs_to_get = total_nr_docs - len(docs)
+            text_docs_to_get = math.ceil(nr_docs_to_get / 2)
+            title_docs_to_get = math.floor(nr_docs_to_get / 2)
+            assert text_docs_to_get + title_docs_to_get == nr_docs_to_get
+            current_docs = (
+                docs
+                + text_related_docs[i][:text_docs_to_get]
+                + title_related_docs[i][:title_docs_to_get]
+            )
+            assert len(current_docs) == total_nr_docs
+            current_docs = unique(current_docs)
+            result_docs.append(current_docs)
         return result_docs
+
+    merged_docs = [unique(x + y) for x, y in zip(text_related_docs, title_related_docs)]
 
     return merged_docs
 
@@ -200,6 +241,12 @@ def main():
     )
     parser.add_argument(
         "--title_wm_path", default=None, type=str, help="Path to the TF-IDF word model"
+    )
+    parser.add_argument(
+        "--entity_matched_docs_path",
+        default=None,
+        type=str,
+        help="Path to the entity matched docs file",
     )
     parser.add_argument(
         "--out_file",
@@ -276,8 +323,19 @@ def main():
             raise ArgumentError(
                 "The title vectorizer path should include the name of the .pickle file"
             )
+    if args.use_entity_matching:
+        if not args.entity_matched_docs_path:
+            raise ArgumentError(
+                "You need to provide the path to the entity matched docs if these should be used"
+            )
+        if ".jsonl" not in args.entity_matched_docs_path:
+            raise ArgumentError(
+                "The entity matched docs path should include the name of the .jsonl file"
+            )
 
     data = load_jsonl(args.data_path)[1:]
+    if TESTING:
+        data = data[: args.batch_size]
 
     logger.info("Getting the top k docs...")
     top_k_docs = get_top_k_docs(
@@ -292,6 +350,7 @@ def main():
         args.only_titles,
         args.only_text,
         args.use_entity_matching,
+        args.entity_matched_docs_path,
     )
     logger.info("Finished getting the top k docs")
 
@@ -306,6 +365,13 @@ def main():
 
     store_jsonl(result, args.out_file)
     logger.info("Stored retrieved documents in '{}'".format(args.out_file))
+
+    accuracy, precision, recall, f1 = calculate_accuracy(result, data)
+    logger.info("====== Results for top k docs =======")
+    logger.info("Accuracy: {}".format(accuracy))
+    logger.info("Precision: {}".format(precision))
+    logger.info("Recall: {}".format(recall))
+    logger.info("F1: {}".format(f1))
 
 
 if __name__ == "__main__":

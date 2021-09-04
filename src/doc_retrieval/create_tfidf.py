@@ -1,4 +1,5 @@
-import os, time, argparse, pickle
+import os, time, pickle
+from argparse import ArgumentError, ArgumentParser
 import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
 from util.util_funcs import (
@@ -28,7 +29,11 @@ def create_tfidf(use_stemming, corpus_path):
 
     else:
         tfidfvectorizer = TfidfVectorizer(
-            analyzer="word", stop_words="english", dtype=np.float32
+            analyzer="word",
+            stop_words="english",
+            dtype=np.float32,
+            max_df=max_df,
+            min_df=min_df,
         )
         tfidf_wm = tfidfvectorizer.fit_transform(corpus)
 
@@ -41,30 +46,8 @@ def create_tfidf(use_stemming, corpus_path):
     return tfidfvectorizer, tfidf_wm
 
 
-def store_tfidf(tfidfvectorizer, tfidf_wm, out_path, use_stemming):
-    # TODO: Change this to get file names from args instead
-    pickle.dump(
-        tfidfvectorizer,
-        open(
-            "{}vectorizer{}32bit.pickle".format(
-                out_path, "-stemmed-" if use_stemming else "-"
-            ),
-            "wb",
-        ),
-    )
-    pickle.dump(
-        tfidf_wm,
-        open(
-            "{}tfidf_wm{}32bit.pickle".format(
-                out_path, "-stemmed-" if use_stemming else "-"
-            ),
-            "wb",
-        ),
-    )
-
-
 def main():
-    parser = argparse.ArgumentParser(
+    parser = ArgumentParser(
         description="Creates the TF-IDF matrix for matching claims with documents"
     )
     parser.add_argument(
@@ -74,18 +57,48 @@ def main():
         help="Should the corpus be stemmed before creating TF-IDF",
     )
     parser.add_argument(
+        "--create_doc_id_map",
+        default=False,
+        action="store_true",
+        help="Should we create the doc id map?",
+    )
+    parser.add_argument(
         "--corpus_path", default=None, type=str, help="Path to the corpus to be parsed"
     )
     parser.add_argument(
         "--out_path", default=None, type=str, help="Path to the output folder"
     )
+    parser.add_argument(
+        "--vectorizer_out_file",
+        default=None,
+        type=str,
+        help="Path to the file in which to store the vectorizer",
+    )
+    parser.add_argument(
+        "--wm_out_file",
+        default=None,
+        type=str,
+        help="Path to the file in which to store the word model",
+    )
 
     args = parser.parse_args()
 
     if not args.corpus_path:
-        raise RuntimeError("Invalid corpus path")
+        raise ArgumentError("Invalid corpus path")
     if not args.out_path:
-        raise RuntimeError("Invalid output path")
+        raise ArgumentError("Invalid output path")
+    if not args.vectorizer_out_file:
+        raise ArgumentError("Invalid vectorizer out file path")
+    if ".pickle" not in args.vectorizer_out_file:
+        raise ArgumentError(
+            "The vectorizer out file path should contain the .pickle file name"
+        )
+    if not args.wm_out_file:
+        raise ArgumentError("Invalid word model out file path")
+    if ".pickle" not in args.wm_out_file:
+        raise ArgumentError(
+            "The word model out file path should contain the .pickle file name"
+        )
 
     out_dir = os.path.dirname(args.out_path)
     if not os.path.exists(out_dir):
@@ -97,14 +110,18 @@ def main():
     )
     tfidfvectorizer, tfidf_wm = create_tfidf(args.use_stemming, args.corpus_path)
     logger.info("Storing TF-IDF matrix as pickle")
-    store_tfidf(tfidfvectorizer, tfidf_wm, args.out_path, args.use_stemming)
+    pickle.dump(tfidfvectorizer, open(args.vectorizer_out_file, "wb"))
+    logger.info("Stored TF-IDF vectorizer in '{}'".format(args.vectorizer_out_file))
+    pickle.dump(tfidf_wm, open(args.wm_out_file, "wb"))
+    logger.info("Stored TF-IDF word model in '{}'".format(args.wm_out_file))
 
-    logger.info("Creating doc id map")
-    doc_id_map = create_doc_id_map(args.corpus_path)
-    logger.info("Storing doc id map")
-    doc_id_map_file = args.out_path + "doc_id_map.json"
-    store_json(doc_id_map, doc_id_map_file)
-    logger.info("Doc id map stored")
+    if args.create_doc_id_map:
+        logger.info("Creating doc id map")
+        doc_id_map = create_doc_id_map(args.corpus_path)
+        logger.info("Storing doc id map")
+        doc_id_map_file = args.out_path + "doc_id_map.json"
+        store_json(doc_id_map, doc_id_map_file)
+        logger.info("Doc id map stored")
 
 
 if __name__ == "__main__":
