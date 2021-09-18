@@ -1051,52 +1051,17 @@
             "justMyCode": false
         },
         {
-            "name": "TEST: Convert Data to Tapas Format",
-            "type": "python",
-            "request": "launch",
-            "program": "${workspaceFolder}/src/data_processing/convert_test_to_tapas_data.py",
-            "console": "integratedTerminal",
-            "args":[
-                "--db_path=data/feverous_wikiv1.db",
-                "--retrieved_tables_file=data/test/top_5_tables.jsonl",
-                "--output_data_file=data/test/tapas_data.jsonl",
-            ],
-        },
-        {
-            "name": "TEST: Create Tapas Tables",
-            "type": "python",
-            "request": "launch",
-            "program": "${workspaceFolder}/src/data_processing/create_tapas_tables.py",
-            "console": "integratedTerminal",
-            "args":[
-                "--tapas_train_path=data/test/tapas_data.jsonl",
-                "--out_path=data/test/",
-                "--table_out_path=data/test/tables/",
-                "--is_predict",
-            ],
-        },
-        {
-            "name": "TEST: Create Sentence Entailment Data",
-            "type": "python",
-            "request": "launch",
-            "program": "${workspaceFolder}/src/data_processing/create_sentence_entailment_data.py",
-            "console": "integratedTerminal",
-            "args":[
-                "--db_path=data/feverous_wikiv1.db",
-                "--input_data_file=data/test/top_sents.jsonl",
-                "--output_data_file=data/test/sentence_entailment_data.jsonl",
-                "--is_predict"
-            ],
-        },
-        {
             "name": "TEST: Merge Table and Sentence Data",
             "type": "python",
             "request": "launch",
             "program": "${workspaceFolder}/src/data_processing/merge_table_and_sentence_data_test_set.py",
             "console": "integratedTerminal",
             "args":[
-                "--tapas_csv_file=data/test/tapas_data.csv",
-                "--sentence_data_file=data/test/sentence_entailment_data.jsonl",
+                "--db_path=data/feverous_wikiv1.db",
+                "--top_tables_file=data/test/top_5_tables.jsonl",
+                "--top_sents_file=data/test/top_5_sents.jsonl",
+                "--table_out_path=data/test/tables/",
+                "--is_predict",
                 "--out_file=data/test/entailment_data.csv",
             ],
         },

@@ -4,7 +4,6 @@ from collections import defaultdict
 from tqdm import tqdm
 
 DIR_PATH = os.path.abspath(os.getcwd())
-
 FEVEROUS_PATH = DIR_PATH + "/FEVEROUS/src"
 sys.path.insert(0, FEVEROUS_PATH)
 
@@ -18,46 +17,27 @@ stats = defaultdict(int)
 def extract_sentence_evidence(db, data_point, is_predict):
     if is_predict:
         sentence_ids = data_point["top_sents"]
+    else:
+        for evidence_obj in data_point["evidence"]:
+            sentence_ids = []
+            for evidence in evidence_obj["content"]:
+                if "_sentence_" in evidence:
+                    sentence_ids.append(evidence)
 
-        doc_name = None
-        doc_json = None
-        page = None
-        sentences = []
-        for sentence_id in sentence_ids:
-            sentence_id_split = sentence_id.split("_")
-            new_doc_name = sentence_id_split[0]
-            if new_doc_name != doc_name:
-                doc_name = new_doc_name
-                doc_json = db.get_doc_json(doc_name)
-                page = WikiPage(doc_name, doc_json)
-            sentence_obj = page.get_element_by_id("_".join(sentence_id_split[1:]))
-            sentence = replace_entities(sentence_obj.content)
-            sentences.append(sentence)
-
-        return sentences
-
-    for evidence_obj in data_point["evidence"]:
-        sentence_ids = []
-        for evidence in evidence_obj["content"]:
-            if "_sentence_" in evidence:
-                sentence_ids.append(evidence)
-
-        doc_name = None
-        doc_json = None
-        page = None
-        sentences = []
-        for sentence_id in sentence_ids:
-            sentence_id_split = sentence_id.split("_")
-            new_doc_name = sentence_id_split[0]
-            if new_doc_name != doc_name:
-                doc_name = new_doc_name
-                doc_json = db.get_doc_json(doc_name)
-                page = WikiPage(doc_name, doc_json)
-            sentence_obj = page.get_element_by_id("_".join(sentence_id_split[1:]))
-            sentence = replace_entities(sentence_obj.content)
-            sentences.append(sentence)
-
-        return sentences
+    doc_name = None
+    doc_json = None
+    page = None
+    sentences = []
+    for sentence_id in sentence_ids:
+        sentence_id_split = sentence_id.split("_")
+        new_doc_name = sentence_id_split[0]
+        if new_doc_name != doc_name:
+            doc_name = new_doc_name
+            doc_json = db.get_doc_json(doc_name)
+            page = WikiPage(doc_name, doc_json)
+        sentence_obj = page.get_element_by_id("_".join(sentence_id_split[1:]))
+        sentence = replace_entities(sentence_obj.content)
+        sentences.append(sentence)
 
 
 def create_sentence_entailment_data(db, input_data, is_predict):

@@ -1,14 +1,11 @@
 import argparse
-from collections import defaultdict
 import pandas as pd
 import numpy as np
 import os
 import shutil
-
+from collections import defaultdict
 from tqdm import tqdm
-
 from util.util_funcs import load_jsonl, remove_header_tokens
-
 
 MAX_NUM_COLS = 32
 MAX_NUM_ROWS = 64
