@@ -19,6 +19,10 @@ porter_stemmer = PorterStemmer()
 s_words = set(stopwords.words("english"))
 
 
+LABEL_TO_IDX = {"SUPPORTS": 0, "REFUTES": 1, "NOT ENOUGH INFO": 2}
+IDX_TO_LABEL = {0: "SUPPORTS", 1: "REFUTES", 2: "NOT ENOUGH INFO"}
+
+
 def calc_f1(precision: float, recall: float):
     """Calculates the F1 score
 
@@ -185,14 +189,14 @@ def load_json(path: str):
         path (str): The path to the json file
 
     Raises:
-        ArgumentError: If the provided path does not point to a json file
+        RuntimeError: If the provided path does not point to a json file
 
     Returns:
         dict: A dict of the json file
     """
 
     if not ".json" in path:
-        raise ArgumentError("'path' is not pointing to a json file")
+        raise RuntimeError("'path' is not pointing to a json file")
     data = None
     with open(path) as f:
         data = json.loads(f.read())
@@ -206,14 +210,14 @@ def load_jsonl(path: str) -> List[dict]:
         path (str): The path to the jsonl file
 
     Raises:
-        ArgumentError: If the provided path does not point to a jsonl file
+        RuntimeError: If the provided path does not point to a jsonl file
 
     Returns:
         List[dict]: A list of the jsonl file
     """
 
     if not ".jsonl" in path:
-        raise ArgumentError("'path' is not pointing to a jsonl file")
+        raise RuntimeError("'path' is not pointing to a jsonl file")
     result = []
     with jsonlines.open(path) as reader:
         for doc in reader:
@@ -260,7 +264,7 @@ def store_json(
     ):
         raise ArgumentTypeError("'data' needs to be a dict")
     if ".json" not in file_path:
-        raise ArgumentError("'file_path' needs to include the name of the output file")
+        raise RuntimeError("'file_path' needs to include the name of the output file")
     with open(file_path, mode="w") as f:
         f.write(json.dumps(data, sort_keys=sort_keys, indent=indent))
 
@@ -269,7 +273,7 @@ def store_jsonl(data: list, file_path: str):
     if type(data) != list:
         raise ArgumentTypeError("'data' needs to be a list")
     if ".jsonl" not in file_path:
-        raise ArgumentError("'file_path' needs to include the name of the output file")
+        raise RuntimeError("'file_path' needs to include the name of the output file")
     with jsonlines.open(file_path, mode="w") as f:
         for d in data:
             f.write(d)

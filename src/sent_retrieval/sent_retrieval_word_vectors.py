@@ -1,19 +1,10 @@
 import os, sys, nltk
 import gensim.downloader
-import numpy as np
-from argparse import ArgumentParser, ArgumentError
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
+from argparse import ArgumentParser
 from tqdm import tqdm
 from sent_retrieval.calculate_sentence_retrieval_accuracy import calculate_score
 
-from util.util_funcs import (
-    load_jsonl,
-    extract_sents,
-    remove_stopwords,
-    store_jsonl,
-    unique,
-)
+from util.util_funcs import load_jsonl, extract_sents, remove_stopwords, store_jsonl
 from util.logger import get_logger
 
 DIR_PATH = os.path.abspath(os.getcwd())
@@ -154,19 +145,19 @@ def main():
     args = parser.parse_args()
 
     if not args.db_path:
-        raise ArgumentError("Invalid database path")
+        raise RuntimeError("Invalid database path")
     if ".db" not in args.db_path:
-        raise ArgumentError("The database path should include the name of the .db file")
+        raise RuntimeError("The database path should include the name of the .db file")
     if not args.top_docs_file:
-        raise ArgumentError("Invalid top docs path")
+        raise RuntimeError("Invalid top docs path")
     if ".jsonl" not in args.top_docs_file:
-        raise ArgumentError(
+        raise RuntimeError(
             "The top docs path should include the name of the .jsonl file"
         )
     if not args.out_file:
-        raise ArgumentError("Invalid output file path")
+        raise RuntimeError("Invalid output file path")
     if ".jsonl" not in args.out_file:
-        raise ArgumentError(
+        raise RuntimeError(
             "The output file path should include the name of the .jsonl file"
         )
 
@@ -186,7 +177,7 @@ def main():
 
     if args.data_path:
         if ".jsonl" not in args.data_path:
-            raise ArgumentError(
+            raise RuntimeError(
                 "The train data path should include the name of the .jsonl file"
             )
         data = load_jsonl(args.data_path)[1:]

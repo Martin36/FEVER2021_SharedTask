@@ -288,48 +288,48 @@ def main():
     args = parser.parse_args()
 
     if not args.doc_id_map_path:
-        raise ArgumentError("Invalid doc id map path")
+        raise RuntimeError("Invalid doc id map path")
     if ".json" not in args.doc_id_map_path:
-        raise ArgumentError(
+        raise RuntimeError(
             "The doc id map path should include the name of the .json file"
         )
     if not args.data_path:
-        raise ArgumentError("Invalid data path")
+        raise RuntimeError("Invalid data path")
     if ".json" not in args.data_path:
-        raise ArgumentError("The data path should include the name of the .jsonl file")
+        raise RuntimeError("The data path should include the name of the .jsonl file")
     if not args.only_titles:
         if not args.vectorizer_path:
-            raise ArgumentError("Invalid vectorizer path")
+            raise RuntimeError("Invalid vectorizer path")
         if ".pickle" not in args.vectorizer_path:
-            raise ArgumentError(
+            raise RuntimeError(
                 "The vectorizer path should include the name of the .pickle file"
             )
         if not args.wm_path:
-            raise ArgumentError("Invalid word model path")
+            raise RuntimeError("Invalid word model path")
         if ".pickle" not in args.wm_path:
-            raise ArgumentError(
+            raise RuntimeError(
                 "The vectorizer path should include the name of the .pickle file"
             )
     if not args.only_text:
         if not args.title_vectorizer_path:
-            raise ArgumentError("Invalid title vectorizer path")
+            raise RuntimeError("Invalid title vectorizer path")
         if ".pickle" not in args.title_vectorizer_path:
-            raise ArgumentError(
+            raise RuntimeError(
                 "The title vectorizer path should include the name of the .pickle file"
             )
         if not args.title_wm_path:
-            raise ArgumentError("Invalid title word model path")
+            raise RuntimeError("Invalid title word model path")
         if ".pickle" not in args.title_wm_path:
-            raise ArgumentError(
+            raise RuntimeError(
                 "The title vectorizer path should include the name of the .pickle file"
             )
     if args.use_entity_matching:
         if not args.entity_matched_docs_path:
-            raise ArgumentError(
+            raise RuntimeError(
                 "You need to provide the path to the entity matched docs if these should be used"
             )
         if ".jsonl" not in args.entity_matched_docs_path:
-            raise ArgumentError(
+            raise RuntimeError(
                 "The entity matched docs path should include the name of the .jsonl file"
             )
 

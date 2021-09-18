@@ -84,19 +84,19 @@ def main():
     args = parser.parse_args()
 
     if not args.corpus_path:
-        raise ArgumentError("Invalid corpus path")
+        raise RuntimeError("Invalid corpus path")
     if not args.out_path:
-        raise ArgumentError("Invalid output path")
+        raise RuntimeError("Invalid output path")
     if not args.vectorizer_out_file:
-        raise ArgumentError("Invalid vectorizer out file path")
+        raise RuntimeError("Invalid vectorizer out file path")
     if ".pickle" not in args.vectorizer_out_file:
-        raise ArgumentError(
+        raise RuntimeError(
             "The vectorizer out file path should contain the .pickle file name"
         )
     if not args.wm_out_file:
-        raise ArgumentError("Invalid word model out file path")
+        raise RuntimeError("Invalid word model out file path")
     if ".pickle" not in args.wm_out_file:
-        raise ArgumentError(
+        raise RuntimeError(
             "The word model out file path should contain the .pickle file name"
         )
 

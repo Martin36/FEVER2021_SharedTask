@@ -49,19 +49,19 @@ def main():
     args = parser.parse_args()
 
     if not args.doc_id_map_path:
-        raise ArgumentError("Invalid doc id map path")
+        raise RuntimeError("Invalid doc id map path")
     if ".json" not in args.doc_id_map_path:
-        raise ArgumentError(
+        raise RuntimeError(
             "The doc id map path should include the name of the .json file"
         )
     if not args.data_path:
-        raise ArgumentError("Invalid data path")
+        raise RuntimeError("Invalid data path")
     if ".jsonl" not in args.data_path:
-        raise ArgumentError("The data path should include the name of the .jsonl file")
+        raise RuntimeError("The data path should include the name of the .jsonl file")
     if not args.out_file:
-        raise ArgumentError("Invalid out filenumeratee path")
+        raise RuntimeError("Invalid out filenumeratee path")
     if ".jsonl" not in args.out_file:
-        raise ArgumentError(
+        raise RuntimeError(
             "The out file path should include the name of the .jsonl file"
         )
 

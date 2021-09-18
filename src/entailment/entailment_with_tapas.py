@@ -106,7 +106,6 @@ def main():
     )
 
     train_dataset = TableDataset(data, tokenizer)
-    # train_dataset = nc.SafeDataset(train_dataset)
     train_dataloader = torch.utils.data.DataLoader(
         train_dataset, batch_size=args.batch_size, drop_last=True, collate_fn=collate_fn
     )

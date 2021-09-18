@@ -17,7 +17,7 @@ stats = defaultdict(int)
 
 def extract_sentence_evidence(db, data_point, is_predict):
     if is_predict:
-        sentence_ids = data_point["top_5_sents"]  # TODO: Make this generic
+        sentence_ids = data_point["top_sents"]
 
         doc_name = None
         doc_json = None

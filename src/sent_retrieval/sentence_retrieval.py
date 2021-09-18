@@ -1,5 +1,5 @@
-import os, sys, argparse
-
+import os, sys
+from argparse import ArgumentError, ArgumentParser
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 from tqdm import tqdm
@@ -160,7 +160,7 @@ def get_top_sents_for_claim(
 
 
 def main():
-    parser = argparse.ArgumentParser(
+    parser = ArgumentParser(
         description="Retrieves the most similar sentences from the given documents"
     )
     parser.add_argument(

@@ -465,7 +465,7 @@
             "console": "integratedTerminal",
             "args":[
                 "--data_path=train_data/train.jsonl",
-                "--top_k_sents_file=data/document_retrieval/top_5_sents.jsonl",
+                "--top_k_sents_file=data/document_retrieval/top_sents.jsonl",
             ],
         },
         {
@@ -819,6 +819,19 @@
             ],
         },
         {
+            "name": "FEVER: Create Sentence Entailment Data (Dev)",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/data_processing/create_sentence_entailment_data.py",
+            "console": "integratedTerminal",
+            "args":[
+                "--db_path=data/feverous_wikiv1.db",
+                "--input_data_file=data/dev/top_sents.jsonl",
+                "--output_data_file=data/dev/sentence_entailment_data.jsonl",
+                "--is_predict"
+            ],
+        },
+        {
             "name": "FEVER: Entailment with T5",
             "type": "python",
             "request": "launch",
@@ -866,6 +879,18 @@
                 "--sentence_data_file=data/sentence_entailment_eval_data.jsonl",
                 "--id_label_map_file=data/id_label_map_eval.json",
                 "--out_file=data/entailment_eval_data.csv",
+            ],
+        },
+        {
+            "name": "FEVER: Merge Table and Sentence Data (Dev)",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/data_processing/merge_table_and_sentence_data_test_set.py",
+            "console": "integratedTerminal",
+            "args":[
+                "--tapas_csv_file=data/tapas/dev/tapas_data.csv",
+                "--sentence_data_file=data/dev/sentence_entailment_data.jsonl",
+                "--out_file=data/dev/entailment_data.csv",
             ],
         },
         {
@@ -951,6 +976,45 @@
                 "--retrieved_cells_file=data/dev/top_table_cells.jsonl",
                 "--data_file=train_data/dev.jsonl",
                 "--out_file=data/dev/table_retriever_eval.json",
+            ],
+        },
+        {
+            "name": "FEVER: Predict Veracity (Dev)",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/entailment/predict_veracity.py",
+            "console": "integratedTerminal",
+            "args":[
+                "--in_file=data/dev/entailment_data.csv",
+                "--model_file=models/veracity_prediction_model.pth",
+                "--batch_size=16",
+                "--out_file=data/dev/veracity_predictions.jsonl",
+            ],
+        },
+        {
+            "name": "FEVER: Create final results (dev)",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/data_processing/create_final_results.py",
+            "console": "integratedTerminal",
+            "args":[
+                "--data_file=train_data/dev.jsonl",
+                "--veracity_predictions_file=data/dev/veracity_predictions.jsonl",
+                "--sentence_evidence_file=data/dev/top_sents.jsonl",
+                "--table_evidence_file=data/dev/top_table_cells.jsonl",
+                "--out_file=data/dev/final_output.jsonl",
+                "--add_gold_labels"
+            ],
+        },
+        {
+            "name": "FEVER: Calculate FEVEROUS score (dev)",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/FEVEROUS/evaluation/evaluate.py",
+            "console": "integratedTerminal",
+            "args":[
+                "--input_path=data/dev/final_output.jsonl",
+                "--use_gold_verdict"
             ],
         },
         {
@@ -1052,7 +1116,7 @@
             "console": "integratedTerminal",
             "args":[
                 "--db_path=data/feverous_wikiv1.db",
-                "--input_data_file=data/test/top_5_sents.jsonl",
+                "--input_data_file=data/test/top_sents.jsonl",
                 "--output_data_file=data/test/sentence_entailment_data.jsonl",
                 "--is_predict"
             ],
@@ -1106,7 +1170,7 @@
             "args":[
                 "--test_data_file=train_data/feverous_test_unlabeled.jsonl",
                 "--veracity_predictions_file=data/test/veracity_predictions.jsonl",
-                "--sentence_evidence_file=data/test/top_5_sents.jsonl",
+                "--sentence_evidence_file=data/test/top_sents.jsonl",
                 "--table_evidence_file=data/test/top_table_cells.jsonl",
                 "--out_file=data/test/final_output.jsonl",
             ],

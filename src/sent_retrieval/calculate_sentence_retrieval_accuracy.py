@@ -86,15 +86,15 @@ def main():
     args = parser.parse_args()
 
     if not args.data_path:
-        raise ArgumentError("Invalid train data path")
+        raise RuntimeError("Invalid train data path")
     if ".jsonl" not in args.data_path:
-        raise ArgumentError(
+        raise RuntimeError(
             "The train data path should include the name of the .jsonl file"
         )
     if not args.top_k_sents_file:
-        raise ArgumentError("Invalid top k sents path")
+        raise RuntimeError("Invalid top k sents path")
     if ".jsonl" not in args.top_k_sents_file:
-        raise ArgumentError(
+        raise RuntimeError(
             "The top k docs sents file path should include the name of the .jsonl file"
         )
 
@@ -107,7 +107,7 @@ def main():
 
     if args.out_file:
         if ".json" not in args.out_file:
-            raise ArgumentError(
+            raise RuntimeError(
                 "The output file path should include the name of the .json file"
             )
         result = {

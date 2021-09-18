@@ -1,9 +1,10 @@
-import argparse
-
+from argparse import ArgumentParser
 from collections import defaultdict
 from tqdm import tqdm
-
 from util.util_funcs import load_jsonl, store_json
+from util.logger import get_logger
+
+logger = get_logger()
 
 stats = defaultdict(int)
 
@@ -15,8 +16,8 @@ def evaluate(data, retrieved_cells):
     sum_precision_tables_only = 0
     sum_recall_tables_only = 0
 
-    print("Data len: {}".format(len(data)))
-    print("Retrieved cells len: {}".format(len(retrieved_cells)))
+    logger.info("Data len: {}".format(len(data)))
+    logger.info("Retrieved cells len: {}".format(len(retrieved_cells)))
 
     for d in tqdm(data):
         claim = d["claim"]
@@ -85,12 +86,12 @@ def evaluate(data, retrieved_cells):
     recall_all = sum_recall / len(data)
     f1_all = 2 * ((precision_all * recall_all) / (precision_all + recall_all))
 
-    print(
+    logger.info(
         "Samples with multiple evidence: {}".format(
             stats["samples_with_multiple_evidence"]
         )
     )
-    print(
+    logger.info(
         "Samples without table evidence: {}".format(
             stats["samples_without_table_evidence"]
         )
@@ -109,9 +110,7 @@ def evaluate(data, retrieved_cells):
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Evaluates the table cell retriever model"
-    )
+    parser = ArgumentParser(description="Evaluates the table cell retriever model")
     parser.add_argument(
         "--retrieved_cells_file",
         default=None,
@@ -158,7 +157,7 @@ def main():
     result = evaluate(data, retrieved_cells)
 
     store_json(result, args.out_file)
-    print("Stored table retriever evaluation data in '{}'".format(args.out_file))
+    logger.info("Stored table retriever evaluation data in '{}'".format(args.out_file))
 
 
 if __name__ == "__main__":

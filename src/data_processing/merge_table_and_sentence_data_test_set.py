@@ -1,11 +1,16 @@
-import argparse
+from argparse import ArgumentParser
 import pandas as pd
 
-from util_funcs import load_jsonl
+from util.util_funcs import load_jsonl
+from util.logger import get_logger
+
+logger = get_logger()
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Trains the veracity prediction model")
+    parser = ArgumentParser(
+        description="Merges the table and sentence data for the test set"
+    )
     parser.add_argument(
         "--tapas_csv_file",
         default=None,
@@ -59,14 +64,14 @@ def main():
     merged_data = merged_data.drop(["id_y"], axis=1)
     print(merged_data.head())
 
-    print("Length of tapas data: {}".format(len(tapas_data)))
-    print("Length of sentence data: {}".format(len(sent_data_table)))
-    print("Length of merged data: {}".format(len(merged_data)))
-    print("Column names: {}".format(merged_data.columns))
+    logger.info("Length of tapas data: {}".format(len(tapas_data)))
+    logger.info("Length of sentence data: {}".format(len(sent_data_table)))
+    logger.info("Length of merged data: {}".format(len(merged_data)))
+    logger.info("Column names: {}".format(merged_data.columns))
 
     # Remove duplicates
     merged_data = merged_data.drop_duplicates(subset=["claim"])
-    print(
+    logger.info(
         "Length of merged data, after 'claim' duplicates removed: {}".format(
             len(merged_data)
         )
@@ -74,7 +79,7 @@ def main():
 
     # Remove all rows that doesn't have any claim value
     merged_data.dropna(subset=["claim"], inplace=True)
-    print(
+    logger.info(
         "Length of merged data, after claim merge and nan removal: {}".format(
             len(merged_data)
         )
@@ -83,11 +88,11 @@ def main():
     assert not merged_data["claim"].isnull().values.any()
 
     nan_claims = merged_data["claim"].isnull().sum()
-    print("Nr of nan claims: {}".format(nan_claims))
-    print("Final column names: {}".format(merged_data.columns))
+    logger.info("Nr of nan claims: {}".format(nan_claims))
+    logger.info("Final column names: {}".format(merged_data.columns))
 
     merged_data.to_csv(args.out_file)
-    print("Stored entailment data in '{}'".format(args.out_file))
+    logger.info("Stored entailment data in '{}'".format(args.out_file))
 
 
 if __name__ == "__main__":

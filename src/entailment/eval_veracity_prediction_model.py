@@ -24,6 +24,8 @@ def eval_model(veracity_model, roberta_model, tapas_model, dataloader: DataLoade
 
     size = len(dataloader.dataset)
     nr_correct = 0
+    all_correct_labels = []
+    all_pred_labels = []
     for idx, batch in enumerate(tqdm(dataloader)):
 
         start_time = time.time()
@@ -64,6 +66,10 @@ def eval_model(veracity_model, roberta_model, tapas_model, dataloader: DataLoade
         )  # .to(device)
         correct_label = batch["label"]
 
+        all_correct_labels = all_correct_labels + [
+            id_to_label_map[label.item()] for label in correct_label
+        ]
+
         for label in correct_label:
             stats["actual_{}".format(id_to_label_map[label.item()])] += 1
 
@@ -88,6 +94,10 @@ def eval_model(veracity_model, roberta_model, tapas_model, dataloader: DataLoade
         pred_labels = torch.argmax(pred, dim=1)
         nr_correct += torch.sum(pred_labels == correct_label)
 
+        all_pred_labels = all_pred_labels + [
+            id_to_label_map[label.item()] for label in pred_labels
+        ]
+
         for label in pred_labels:
             stats["predicted_{}".format(id_to_label_map[label.item()])] += 1
 
@@ -103,6 +113,9 @@ def eval_model(veracity_model, roberta_model, tapas_model, dataloader: DataLoade
     for label in labels:
         result["actual_{}".format(label)] = stats["actual_{}".format(label)]
         result["predicted_{}".format(label)] = stats["predicted_{}".format(label)]
+
+    result["all_correct_labels"] = all_correct_labels
+    result["all_predicted_labels"] = all_pred_labels
 
     return result
 
@@ -166,7 +179,9 @@ def main():
         },
     )
 
-    veracity_model = torch.load(args.model_file)
+    device = torch.device("cpu")
+
+    veracity_model = torch.load(args.model_file, map_location=device)
     veracity_model.to("cpu")
 
     roberta_size = "roberta-base"
@@ -187,7 +202,7 @@ def main():
 
     result = eval_model(veracity_model, roberta_model, tapas_model, dataloader)
 
-    store_json(result, args.out_file)
+    store_json(result, args.out_file, indent=2)
     print("Stored accuracy for veracity prediction model in '{}'".format(args.out_file))
 
 

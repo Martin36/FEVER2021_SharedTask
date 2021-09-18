@@ -8,3 +8,4 @@ train_data/
 tapas_dual_encoder_proj_256_tiny/
 tapas_models/
 *.egg-info/
+FEVER2021_SharedTask_Martin36.egg-info/

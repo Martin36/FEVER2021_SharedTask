@@ -1,6 +1,8 @@
+import math
 import torch
 import pandas as pd
 from torchvision.transforms import Lambda
+from util.util_funcs import LABEL_TO_IDX
 
 
 def collate_fn(batch):
@@ -52,11 +54,6 @@ class TableDataset(torch.utils.data.Dataset):
         # return 10
 
 
-id_to_label_map = {0: "SUPPORTS", 1: "REFUTES", 2: "NOT ENOUGH INFO"}
-
-label_to_id_map = {"SUPPORTS": 0, "REFUTES": 1, "NOT ENOUGH INFO": 2}
-
-
 class PredictionDataset(torch.utils.data.Dataset):
     def __init__(self, entailment_data, roberta_tokenizer, tapas_tokenizer):
         self.entailment_data = entailment_data
@@ -83,21 +80,12 @@ class PredictionDataset(torch.utils.data.Dataset):
             tapas_input = self.tapas_tokenizer(
                 table=table,
                 queries=item.claim,
-                # TODO: The next two lines could possibly be removed, since the values they produced later anyways
-                # answer_coordinates=item.answer_coordinates,
-                # answer_text=item.answer_text,
                 truncation=True,
                 padding="max_length",
                 return_tensors="pt",
             )
             # remove the batch dimension which the tokenizer adds by default
             tapas_input = {key: val.squeeze(0) for key, val in tapas_input.items()}
-            # if torch.gt(tapas_input["numeric_values"], 1e+20).any():
-            #     return None
-
-            # del tapas_input["labels"]
-            # del tapas_input["numeric_values"]
-            # del tapas_input["numeric_values_scale"]
 
             if item.evidence:
                 input_str = "{} </s> {}".format(item.claim, item.evidence)
@@ -115,12 +103,21 @@ class PredictionDataset(torch.utils.data.Dataset):
 
             roberta_input = {key: val.squeeze(0) for key, val in roberta_input.items()}
 
-            output = {
-                "tapas_input": tapas_input,
-                "roberta_input": roberta_input,
-                "label": label_to_id_map[item.label],
-                "claim": item.claim,
-            }
+            if math.isnan(item.label):
+                output = {
+                    "tapas_input": tapas_input,
+                    "roberta_input": roberta_input,
+                    "label": "",
+                    "claim": item.claim,
+                }
+            else:
+                output = {
+                    "tapas_input": tapas_input,
+                    "roberta_input": roberta_input,
+                    "label": LABEL_TO_IDX[item.label],
+                    "claim": item.claim,
+                }
+
             return output
 
         except:

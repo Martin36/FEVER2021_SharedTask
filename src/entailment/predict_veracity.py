@@ -1,17 +1,13 @@
 import argparse
-import ast
-import time
-from util_funcs import store_jsonl
+from util.util_funcs import store_jsonl
 import torch
-import torch.nn as nn
 import pandas as pd
 
-from collections import defaultdict
 from tqdm import tqdm
 from transformers import RobertaTokenizerFast, RobertaModel, TapasTokenizer, TapasModel
 from torch.utils.data import DataLoader
 
-from datasets import PredictionDataset, collate_fn, id_to_label_map
+from util.datasets import PredictionDataset, collate_fn, id_to_label_map
 from prediction_network import PredictionNetwork
 
 
@@ -113,7 +109,7 @@ def main():
 
     entailment_data = pd.read_csv(args.in_file)
 
-    veracity_model = torch.load(args.model_file)
+    veracity_model = torch.load(args.model_file, map_location="cpu")
     veracity_model.to("cpu")
 
     roberta_size = "roberta-base"
