@@ -1,5 +1,5 @@
 import os, sys
-from argparse import ArgumentError, ArgumentParser
+from argparse import ArgumentParser
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 from tqdm import tqdm

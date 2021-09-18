@@ -5,13 +5,6 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python: Current File",
-            "type": "python",
-            "request": "launch",
-            "program": "${file}",
-            "console": "integratedTerminal"
-        },
-        {
             "name": "FEVER: Create dataset stats",
             "type": "python",
             "request": "launch",
@@ -58,6 +51,55 @@
             ],
         },
         {
+            "name": "FEVER: Create Tapas Data (Train)",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/data_processing/create_tapas_data.py",
+            "console": "integratedTerminal",
+            "args":[
+                "--db_path=data/feverous_wikiv1.db",
+                "--data_path=train_data/train.jsonl",
+                "--out_file=data/tapas/train/tapas_train.jsonl"
+            ],
+        },
+        {
+            "name": "FEVER: Create Tapas Data (Dev)",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/data_processing/create_tapas_data.py",
+            "console": "integratedTerminal",
+            "args":[
+                "--db_path=data/feverous_wikiv1.db",
+                "--data_path=train_data/dev.jsonl",
+                "--out_file=data/tapas/tapas_dev.jsonl"
+            ],
+        },
+        {
+            "name": "FEVER: Create Tapas Tables (Train)",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/data_processing/create_tapas_tables.py",
+            "console": "integratedTerminal",
+            "args":[
+                "--tapas_train_path=data/tapas/tapas_train.jsonl",
+                "--out_path=data/tapas/train_data/",
+                "--table_out_path=data/tapas/tables/",
+            ],
+        },
+        {
+            "name": "FEVER: Create Tapas Tables (Dev)",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/data_processing/create_tapas_tables.py",
+            "console": "integratedTerminal",
+            "args":[
+                "--tapas_train_path=data/tapas/dev/tapas_dev.jsonl",
+                "--out_path=data/tapas/dev/",
+                "--table_out_path=data/tapas/dev/tables/",
+                "--write_to_files=True"
+            ],
+        },
+        {
             "name": "FEVER: Create TF-IDF",
             "type": "python",
             "request": "launch",
@@ -78,8 +120,8 @@
             "console": "integratedTerminal",
             "args":[
                 "--corpus_path=data/corpus/",
-                "--vectorizer_out_file=tfidf/title_vectorizer-32bit.pickle",
-                "--wm_out_file=tfidf/title_tfidf_wm-32bit.pickle",
+                "--vectorizer_out_file=tfidf/title_vectorizer.pickle",
+                "--wm_out_file=tfidf/title_tfidf_wm.pickle",
                 "--n_gram_min=2",
                 "--n_gram_max=2"
             ],
@@ -96,18 +138,6 @@
                 "--wm_out_file=tfidf/title_tfidf_wm-ngram=1-4.pickle",
                 "--n_gram_min=1",
                 "--n_gram_max=4"
-            ],
-        },
-        {
-            // TODO
-            "name": "FEVER: Retrieve documents with BM25",
-            "type": "python",
-            "request": "launch",
-            "program": "${workspaceFolder}/src/doc_retrieval/document_retrieval_with_bm25.py",
-            "console": "integratedTerminal",
-            "args":[
-                "--corpus_path=data/corpus/",
-                "--out_path=data/bm25/"
             ],
         },
         {
@@ -296,19 +326,6 @@
             ],
         },
         {
-            // TODO
-            "name": "FEVER: Retrieve documents using word vectors (Dev)",
-            "type": "python",
-            "request": "launch",
-            "program": "${workspaceFolder}/src/doc_retrieval/doc_retrieval_using_word_vecs.py",
-            "console": "integratedTerminal",
-            "args":[
-                "--corpus_path=data/stemmed_corpus/",
-                "--data_path=train_data/dev.jsonl",
-                "--out_file=data/word_vec_retrieval/top_docs_dev.jsonl",
-            ],
-        },
-        {
             "name": "FEVER: Merge NER and TF-IDF retrieval (Dev)",
             "type": "python",
             "request": "launch",
@@ -328,7 +345,7 @@
             "console": "integratedTerminal",
             "args":[
                 "--data_path=train_data/train.jsonl",
-                "--top_k_docs_path=data/document_retrieval/top_10_docs.jsonl",
+                "--top_docs_file=data/document_retrieval/top_docs.jsonl",
                 "--out_file=data/doc_retrieval_acc.json"
             ],
         },
@@ -340,7 +357,7 @@
             "console": "integratedTerminal",
             "args":[
                 "--data_path=train_data/dev.jsonl",
-                "--top_k_docs_path=data/dev/top_docs.jsonl",
+                "--top_docs_file=data/dev/top_docs.jsonl",
                 "--out_file=data/dev/doc_retrieval_acc.json"
             ],
         },
@@ -352,7 +369,7 @@
             "console": "integratedTerminal",
             "args":[
                 "--data_path=train_data/dev.jsonl",
-                "--top_k_docs_path=data/dev/top_docs_text-only.jsonl",
+                "--top_docs_file=data/dev/top_docs_text-only.jsonl",
                 "--out_file=data/dev/doc_retrieval_acc_text-only.json"
             ],
         },
@@ -364,7 +381,7 @@
             "console": "integratedTerminal",
             "args":[
                 "--data_path=train_data/dev.jsonl",
-                "--top_k_docs_path=data/dev/top_docs-title-ngram=1-4.jsonl",
+                "--top_docs_file=data/dev/top_docs-title-ngram=1-4.jsonl",
                 "--out_file=data/dev/doc_retrieval_acc-title-ngram=1-4.json"
             ],
         },
@@ -376,7 +393,7 @@
             "console": "integratedTerminal",
             "args":[
                 "--data_path=train_data/dev.jsonl",
-                "--top_k_docs_path=data/dev/top_docs_title-ngram=1-4_titles-only.jsonl",
+                "--top_docs_file=data/dev/top_docs_title-ngram=1-4_titles-only.jsonl",
                 "--out_file=data/dev/doc_retrieval_acc_title-ngram=1-4_titles-only.json"
             ],
         },
@@ -388,7 +405,7 @@
             "console": "integratedTerminal",
             "args":[
                 "--data_path=train_data/train.jsonl",
-                "--top_k_docs_path=data/train/top_docs_entity_matching.jsonl",
+                "--top_docs_file=data/train/top_docs_entity_matching.jsonl",
                 "--out_file=data/train/doc_retrieval_acc_entity_matching.json"
             ],
         },
@@ -400,7 +417,7 @@
             "console": "integratedTerminal",
             "args":[
                 "--data_path=train_data/dev.jsonl",
-                "--top_k_docs_path=data/dev/top_docs_title-ngram=1-4_entity_matching.jsonl",
+                "--top_docs_file=data/dev/top_docs_title-ngram=1-4_entity_matching.jsonl",
                 "--out_file=data/dev/doc_retrieval_acc_entity_matching.json"
             ],
         },
@@ -412,7 +429,7 @@
             "console": "integratedTerminal",
             "args":[
                 "--data_path=train_data/dev.jsonl",
-                "--top_k_docs_path=data/ner_retrieval/top_docs_ner_and_tfidf_dev_filtered.jsonl",
+                "--top_docs_file=data/ner_retrieval/top_docs_ner_and_tfidf_dev_filtered.jsonl",
                 "--out_file=data/ner_retrieval/retrieval_acc_dev.json"
             ],
         },
@@ -465,7 +482,7 @@
             "console": "integratedTerminal",
             "args":[
                 "--data_path=train_data/train.jsonl",
-                "--top_k_sents_file=data/document_retrieval/top_sents.jsonl",
+                "--top_sents_file=data/document_retrieval/top_sents.jsonl",
             ],
         },
         {
@@ -476,7 +493,7 @@
             "console": "integratedTerminal",
             "args":[
                 "--data_path=train_data/dev.jsonl",
-                "--top_k_sents_file=data/dev/top_sents.jsonl",
+                "--top_sents_file=data/dev/top_sents.jsonl",
                 "--out_file=data/dev/sent_retrieval_acc.json"
             ],
         },
@@ -488,32 +505,8 @@
             "console": "integratedTerminal",
             "args":[
                 "--data_path=train_data/dev.jsonl",
-                "--top_k_sents_file=data/dev/top_sents_word-vecs.jsonl",
+                "--top_sents_file=data/dev/top_sents_word-vecs.jsonl",
                 "--out_file=data/dev/sent_retrieval_acc_word-vecs.json"
-            ],
-        },
-        {
-            "name": "FEVER: Create Tapas Data (Train)",
-            "type": "python",
-            "request": "launch",
-            "program": "${workspaceFolder}/src/data_processing/create_tapas_data.py",
-            "console": "integratedTerminal",
-            "args":[
-                "--db_path=data/feverous_wikiv1.db",
-                "--data_path=train_data/train.jsonl",
-                "--out_file=data/tapas/train/tapas_train.jsonl"
-            ],
-        },
-        {
-            "name": "FEVER: Create Tapas Data (Dev)",
-            "type": "python",
-            "request": "launch",
-            "program": "${workspaceFolder}/src/data_processing/create_tapas_data.py",
-            "console": "integratedTerminal",
-            "args":[
-                "--db_path=data/feverous_wikiv1.db",
-                "--data_path=train_data/dev.jsonl",
-                "--out_file=data/tapas/tapas_dev.jsonl"
             ],
         },
         {
@@ -741,31 +734,6 @@
             ]
         },
         {
-            "name": "FEVER: Create Tapas Tables (Train)",
-            "type": "python",
-            "request": "launch",
-            "program": "${workspaceFolder}/src/data_processing/create_tapas_tables.py",
-            "console": "integratedTerminal",
-            "args":[
-                "--tapas_train_path=data/tapas/tapas_train.jsonl",
-                "--out_path=data/tapas/train_data/",
-                "--table_out_path=data/tapas/tables/",
-            ],
-        },
-        {
-            "name": "FEVER: Create Tapas Tables (Dev)",
-            "type": "python",
-            "request": "launch",
-            "program": "${workspaceFolder}/src/data_processing/create_tapas_tables.py",
-            "console": "integratedTerminal",
-            "args":[
-                "--tapas_train_path=data/tapas/dev/tapas_dev.jsonl",
-                "--out_path=data/tapas/dev/",
-                "--table_out_path=data/tapas/dev/tables/",
-                "--write_to_files=True"
-            ],
-        },
-        {
             "name": "FEVER: Train tapas model",
             "type": "python",
             "request": "launch",
@@ -932,7 +900,7 @@
                 "--model_dir=tapas_models",
                 "--init_checkpoint=tapas_dual_encoder_proj_256_tiny/model.ckpt",
                 "--bert_config_file=tapas_dual_encoder_proj_256_tiny/bert_config.json",
-                "--top_docs_file=data/dev/top_10_docs.jsonl",
+                "--top_docs_file=data/dev/top_docs.jsonl",
             ],
             "justMyCode": false
         },
@@ -944,7 +912,7 @@
             "console": "integratedTerminal",
             "args":[
                 "--db_path=data/feverous_wikiv1.db",
-                "--data_file=data/dev/top_5_tables.jsonl",
+                "--data_file=data/dev/top_tables.jsonl",
                 "--model_file=models/tapas_model.pth",
                 "--batch_size=64",
                 "--out_dir=data/dev/",
@@ -1104,7 +1072,6 @@
                 "--tapas_train_path=data/test/tapas_data.jsonl",
                 "--out_path=data/test/",
                 "--table_out_path=data/test/tables/",
-                "--write_to_files=True",
                 "--is_predict",
             ],
         },

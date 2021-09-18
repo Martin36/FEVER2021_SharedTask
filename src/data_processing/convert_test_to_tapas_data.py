@@ -1,19 +1,16 @@
-import argparse
-import os
-import sys
-import shutil
-
+import argparse, os, sys
 from tqdm import tqdm
-
-from util_funcs import load_jsonl, create_table_dict, store_jsonl
+from util.util_funcs import load_jsonl, create_table_dict, store_jsonl
 
 DIR_PATH = os.path.abspath(os.getcwd())
-
 FEVEROUS_PATH = DIR_PATH + "/FEVEROUS/src"
 sys.path.insert(0, FEVEROUS_PATH)
 
 from database.feverous_db import FeverousDB
 from utils.wiki_page import WikiPage
+
+# TODO: Merge the functionality of this script with the "create_tapas_tables.py" script
+# Both of them are not really needed
 
 
 def convert_to_tapas_format(db, input_data):

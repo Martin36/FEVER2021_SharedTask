@@ -1,5 +1,5 @@
 import os, sys, re, json, jsonlines, nltk, pickle, torch
-from argparse import ArgumentError, ArgumentTypeError
+from argparse import ArgumentTypeError
 from collections import OrderedDict, defaultdict
 from typing import List, Union
 from glob import glob

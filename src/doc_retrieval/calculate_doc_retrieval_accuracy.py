@@ -71,10 +71,10 @@ def main():
         "--data_path", default=None, type=str, help="Path to the train data"
     )
     parser.add_argument(
-        "--top_k_docs_path",
+        "--top_docs_file",
         default=None,
         type=str,
-        help="Path to the top k docs from the document retriever",
+        help="Path to the top k docs file from the document retriever",
     )
     parser.add_argument(
         "--out_file",
@@ -91,9 +91,9 @@ def main():
         raise RuntimeError(
             "The train data path should include the name of the .jsonl file"
         )
-    if not args.top_k_docs_path:
+    if not args.top_docs_file:
         raise RuntimeError("Invalid top k docs path")
-    if ".jsonl" not in args.top_k_docs_path:
+    if ".jsonl" not in args.top_docs_file:
         raise RuntimeError(
             "The top k docs path should include the name of the .jsonl file"
         )
@@ -105,7 +105,7 @@ def main():
         )
 
     data = load_jsonl(args.data_path)[1:]
-    related_docs = load_jsonl(args.top_k_docs_path)
+    related_docs = load_jsonl(args.top_docs_file)
     accuracy, precision, recall, f1 = calculate_accuracy(related_docs, data)
     logger.info("====== Results for top k docs =======")
     logger.info("Accuracy: {}".format(accuracy))

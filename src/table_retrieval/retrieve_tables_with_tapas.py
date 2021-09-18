@@ -1,9 +1,4 @@
-import json
-import os
-import sys
-import argparse
-import functools
-import random
+import json, os, sys, argparse, functools, random
 
 from tapas.protos import interaction_pb2
 from tapas.models.bert import modeling
@@ -17,15 +12,11 @@ import tensorflow.compat.v1 as tf
 
 from util.util_funcs import get_tables_from_docs, load_jsonl, store_jsonl
 
-
 DIR_PATH = os.path.abspath(os.getcwd())
-
 FEVEROUS_PATH = DIR_PATH + "/FEVEROUS/src"
 sys.path.insert(0, FEVEROUS_PATH)
 
 from database.feverous_db import FeverousDB
-from utils.wiki_page import WikiPage
-
 
 MAX_SEQ_LENGTH = 512
 
@@ -310,16 +301,16 @@ def main():
         "--model_dir", default=None, type=str, help="Path to the bert config file"
     )
     parser.add_argument(
-        "--output_dir",
-        default=None,
-        type=str,
-        help="Path to the output folder for the model",
-    )
-    parser.add_argument(
         "--top_docs_file",
         default=None,
         type=str,
         help="Path to the file containing the top docs for each claim",
+    )
+    parser.add_argument(
+        "--output_dir",
+        default=None,
+        type=str,
+        help="Path to the output folder for the model",
     )
 
     args = parser.parse_args()
@@ -364,7 +355,7 @@ def main():
         db, data, nr_tables_to_retrieve, output_dir, args.bert_config_file
     )
 
-    output_file = output_dir + "/top_{}_tables.jsonl".format(nr_tables_to_retrieve)
+    output_file = output_dir + "/top_tables.jsonl"
     store_jsonl(table_objs, output_file)
     print("Stored top tables in '{}'".format(output_file))
 

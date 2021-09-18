@@ -1,4 +1,4 @@
-import time, math
+import time, math, os
 from argparse import ArgumentParser
 from tqdm import tqdm
 from typing import List
@@ -332,10 +332,21 @@ def main():
             raise RuntimeError(
                 "The entity matched docs path should include the name of the .jsonl file"
             )
+    if not args.out_file:
+        raise RuntimeError("Invalid out file path")
+    if ".jsonl" not in args.out_file:
+        raise RuntimeError(
+            "The out file path should include the name of the .jsonl file"
+        )
 
     data = load_jsonl(args.data_path)[1:]
     if TESTING:
         data = data[: args.batch_size]
+
+    out_dir = os.path.dirname(args.out_file)
+    if not os.path.exists(out_dir):
+        logger.info("Output directory doesn't exist. Creating {}".format(out_dir))
+        os.makedirs(out_dir)
 
     logger.info("Getting the top k docs...")
     top_k_docs = get_top_k_docs(
