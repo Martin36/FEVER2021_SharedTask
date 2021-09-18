@@ -1,5 +1,5 @@
 import unicodedata
-from argparse import ArgumentError, ArgumentParser
+from argparse import ArgumentParser
 from util.util_funcs import load_jsonl, store_json
 from util.logger import get_logger
 

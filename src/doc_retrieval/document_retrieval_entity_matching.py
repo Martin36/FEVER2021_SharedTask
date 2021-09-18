@@ -1,4 +1,4 @@
-from argparse import ArgumentParser, ArgumentError
+from argparse import ArgumentParser
 from tqdm import tqdm
 from typing import List
 

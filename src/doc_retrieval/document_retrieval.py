@@ -1,5 +1,5 @@
 import time, math
-from argparse import ArgumentParser, ArgumentError
+from argparse import ArgumentParser
 from tqdm import tqdm
 from typing import List
 from sklearn.metrics.pairwise import cosine_similarity

@@ -1,6 +1,6 @@
 import os, time, pickle
 import numpy as np
-from argparse import ArgumentError, ArgumentParser
+from argparse import ArgumentParser
 from sklearn.feature_extraction.text import TfidfVectorizer
 from util.util_funcs import (
     create_doc_id_map,

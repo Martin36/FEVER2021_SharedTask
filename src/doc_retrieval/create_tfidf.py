@@ -1,5 +1,5 @@
 import os, time, pickle
-from argparse import ArgumentError, ArgumentParser
+from argparse import ArgumentParser
 import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
 from util.util_funcs import (
