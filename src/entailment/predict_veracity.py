@@ -1,14 +1,16 @@
 import argparse
-from util.util_funcs import store_jsonl
 import torch
 import pandas as pd
-
 from tqdm import tqdm
 from transformers import RobertaTokenizerFast, RobertaModel, TapasTokenizer, TapasModel
 from torch.utils.data import DataLoader
 
-from util.datasets import PredictionDataset, collate_fn, id_to_label_map
-from prediction_network import PredictionNetwork
+from util.datasets import PredictionDataset, collate_fn
+from util.util_funcs import store_jsonl, IDX_TO_LABEL
+from .prediction_network import PredictionNetwork
+from util.logger import get_logger
+
+logger = get_logger()
 
 
 def predict(veracity_model, roberta_model, tapas_model, dataloader: DataLoader):
@@ -47,7 +49,7 @@ def predict(veracity_model, roberta_model, tapas_model, dataloader: DataLoader):
         for i, label in enumerate(pred_labels.numpy()):
             result_obj = {
                 "idx": start_idx + i,
-                "label": id_to_label_map[label],
+                "label": IDX_TO_LABEL[label],
                 "claim": batch["claim"][i],
             }
             result.append(result_obj)
@@ -110,7 +112,6 @@ def main():
     entailment_data = pd.read_csv(args.in_file)
 
     veracity_model = torch.load(args.model_file, map_location="cpu")
-    veracity_model.to("cpu")
 
     roberta_size = "roberta-base"
     roberta_tokenizer = RobertaTokenizerFast.from_pretrained(roberta_size)
@@ -131,7 +132,7 @@ def main():
     result = predict(veracity_model, roberta_model, tapas_model, dataloader)
 
     store_jsonl(result, args.out_file)
-    print("Stored veracity results in '{}'".format(args.out_file))
+    logger.info("Stored veracity results in '{}'".format(args.out_file))
 
 
 if __name__ == "__main__":

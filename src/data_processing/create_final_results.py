@@ -32,12 +32,6 @@ def main():
         help="Path to the trained veracity prediction model",
     )
     parser.add_argument(
-        "--batch_size",
-        default=1,
-        type=int,
-        help="The size of each training batch. Reduce this is you run out of memory",
-    )
-    parser.add_argument(
         "--out_file",
         default=None,
         type=str,

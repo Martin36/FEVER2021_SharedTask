@@ -15,6 +15,8 @@ if [ ! -f "data/$OUT_FOLDER/top_docs.jsonl" ]; then
         --out_file=data/$OUT_FOLDER/top_docs.jsonl || exit
 
     echo "Finished retrieving documents"
+else
+    echo "Documents already retrieved. Skipping document retrieval"
 fi
 
 if [ ! -f "data/$OUT_FOLDER/doc_retrieval_acc.json" ]; then
@@ -27,6 +29,8 @@ if [ ! -f "data/$OUT_FOLDER/doc_retrieval_acc.json" ]; then
 
 
     echo "Finished calculating document retrieval accuracy"
+else
+    echo "Document retrieval accuracy already calculated. Skipping this step"
 fi
 
 if [ ! -f "data/$OUT_FOLDER/top_sents.jsonl" ]; then
@@ -40,6 +44,8 @@ if [ ! -f "data/$OUT_FOLDER/top_sents.jsonl" ]; then
         --n_gram_max=3 || exit
 
     echo "Finished retrieving sentences"
+else
+    echo "Sentences already retrieved. Skipping this step"
 fi
 
 if [ ! -f "data/$OUT_FOLDER/sent_retrieval_acc.json" ]; then
@@ -51,6 +57,8 @@ if [ ! -f "data/$OUT_FOLDER/sent_retrieval_acc.json" ]; then
         --out_file=data/$OUT_FOLDER/sent_retrieval_acc.json || exit
 
     echo "Finished calculating sentence retrieval accuracy"
+else
+    echo "Sentences retrieval accuracy already calculated. Skipping this step"
 fi
 
 if [ ! -f "data/$OUT_FOLDER/top_tables.jsonl" ]; then
@@ -65,10 +73,12 @@ if [ ! -f "data/$OUT_FOLDER/top_tables.jsonl" ]; then
         --top_docs_file=data/$OUT_FOLDER/top_docs.jsonl || exit
 
     echo "Finished retrieving top tables"
+else
+    echo "Tables already retrieved. Skipping this step"
 fi
 
 
-if [ ! -f "data/$OUT_FOLDER/top_tables.jsonl" ]; then
+if [ ! -f "data/$OUT_FOLDER/top_table_cells.jsonl" ]; then
     echo "Retrieving top table cells..."
 
     python src/table_retrieval/retrieve_table_cells.py \
@@ -80,6 +90,8 @@ if [ ! -f "data/$OUT_FOLDER/top_tables.jsonl" ]; then
         --out_file=data/$OUT_FOLDER/top_table_cells.jsonl || exit
 
     echo "Finished retrieving top table cells"
+else
+    echo "Table cells already retrieved. Skipping this step"
 fi
 
 if [ ! -f "data/$OUT_FOLDER/table_retriever_eval.json" ]; then
@@ -91,52 +103,51 @@ if [ ! -f "data/$OUT_FOLDER/table_retriever_eval.json" ]; then
         --out_file=data/$OUT_FOLDER/table_retriever_eval.json || exit
 
     echo "Finished calculating table cell retrieval accuracy"
+else
+    echo "Table cell accuracy already calculated. Skipping this step"
 fi
 
-echo "Converting tables to TaPaS format..."
+if [ ! -f "data/$OUT_FOLDER/entailment_data.csv" ]; then
+    echo "Merging table and sentence data..."
 
-python src/data_processing/convert_test_to_tapas_data.py \
-    --db_path=data/feverous_wikiv1.db \
-    --retrieved_tables_file=data/$OUT_FOLDER/top_tables.jsonl \
-    --output_data_file=data/$OUT_FOLDER/tapas_data.jsonl || exit
+    python src/data_processing/merge_table_and_sentence_data_test_set.py \
+        --db_path=data/feverous_wikiv1.db \
+        --top_tables_file=data/$OUT_FOLDER/top_tables.jsonl \
+        --top_sents_file=data/$OUT_FOLDER/top_sents.jsonl \
+        --table_out_path=data/$OUT_FOLDER/tables/ \
+        --is_predict \
+        --out_file=data/$OUT_FOLDER/entailment_data.csv || exit
 
-echo "Finished converting tables to TaPaS format"
+    echo "Finished merging table and sentence data"
+else
+    echo "Table and sentence data already merged. Skipping this step"
+fi
 
-echo "Creating TaPaS tables..."
+if [ ! -f "data/$OUT_FOLDER/veracity_predictions.jsonl" ]; then
+    echo "Predicting veracity of claims..."
 
-python src/data_processing/create_tapas_tables.py \
-    --tapas_train_path=data/$OUT_FOLDER/tapas_data.jsonl \
-    --out_path=data/$OUT_FOLDER/ \
-    --table_out_path=data/$OUT_FOLDER/tables/ \
-    --is_predict || exit
+    python src/entailment/predict_veracity.py \
+        --in_file=data/$OUT_FOLDER/entailment_data.csv \
+        --model_file=models/veracity_prediction_model.pth \
+        --batch_size=16 \
+        --out_file=data/$OUT_FOLDER/veracity_predictions.jsonl || exit
 
-echo "Finished creating TaPaS tables"
+    echo "Finished predicting veracity of claims"
+else
+    echo "Predicting veracity of claims already done. Skipping this step"
+fi
 
-echo "Creating sentence entailment data..."
+if [ ! -f "data/$OUT_FOLDER/final_output.jsonl" ]; then
+    echo "Creating the final output..."
 
-python src/data_processing/create_sentence_entailment_data.py \
-    --db_path=data/feverous_wikiv1.db \
-    --input_data_file=data/$OUT_FOLDER/top_sents.jsonl \
-    --output_data_file=data/$OUT_FOLDER/sentence_entailment_data.jsonl \
-    --is_predict || exit
+    python src/data_processing/create_final_results.py \
+        --data_file=train_data/dev.jsonl \
+        --veracity_predictions_file=data/$OUT_FOLDER/veracity_predictions.jsonl \
+        --sentence_evidence_file=data/$OUT_FOLDER/top_sents.jsonl \
+        --table_evidence_file=data/$OUT_FOLDER/top_table_cells.jsonl \
+        --out_file=data/$OUT_FOLDER/final_output.jsonl || exit
 
-echo "Finished creating sentence entailment data"
-
-echo "Creating sentence entailment data..."
-
-python src/data_processing/merge_table_and_sentence_data_test_set.py \
-    --tapas_csv_file=data/$OUT_FOLDER/tapas_data.csv \
-    --sentence_data_file=data/$OUT_FOLDER/sentence_entailment_data.jsonl \
-    --out_file=data/$OUT_FOLDER/entailment_data.csv || exit
-
-echo "Finished creating sentence entailment data"
-
-echo "Predicting veracity of claims..."
-
-python src/entailment/predict_veracity.py \
-    --in_file=data/$OUT_FOLDER/entailment_data.csv \
-    --model_file=models/veracity_prediction_model.pth \
-    --batch_size=16 \
-    --out_file=data/$OUT_FOLDER/veracity_predictions.jsonl || exit
-
-echo "Finished predicting veracity of claims"
+    echo "Finished creating the final output"
+else
+    echo "Final output already created. Skipping this step"
+fi

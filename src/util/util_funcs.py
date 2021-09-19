@@ -1,4 +1,6 @@
 import os, sys, re, json, jsonlines, nltk, pickle, torch
+import numpy as np
+import pandas as pd
 from argparse import ArgumentTypeError
 from collections import OrderedDict, defaultdict
 from typing import List, Union
@@ -6,6 +8,7 @@ from glob import glob
 from tqdm import tqdm
 from nltk.stem.porter import PorterStemmer
 from nltk.corpus import stopwords
+from util.logger import get_logger
 
 DIR_PATH = os.path.abspath(os.getcwd())
 FEVEROUS_PATH = DIR_PATH + "/FEVEROUS/src"
@@ -18,6 +21,7 @@ nltk.download("stopwords")
 porter_stemmer = PorterStemmer()
 s_words = set(stopwords.words("english"))
 
+logger = get_logger()
 
 LABEL_TO_IDX = {"SUPPORTS": 0, "REFUTES": 1, "NOT ENOUGH INFO": 2}
 IDX_TO_LABEL = {0: "SUPPORTS", 1: "REFUTES", 2: "NOT ENOUGH INFO"}
@@ -130,6 +134,189 @@ def create_table_dict(table):
     ]
 
     return table_dict
+
+
+def create_tapas_tables(
+    tapas_table_dicts: List[dict],
+    table_out_path: str,
+    write_to_files: bool,
+    is_predict=False,
+):
+    """Function for creating the tables in csv format used by tapas and returning the data table for tapas input data
+
+    Args:
+        tapas_table_dicts (List[dict]): A list of the tapas tables as dicts
+        table_out_path (str): Path to the folder where to store the tapas tables
+        write_to_files (bool): If True, will create the tapas tables in the given folder
+        is_predict (bool, optional): Set to true if there is no labelled data. Defaults to False.
+
+    Returns:
+        DataFrame: A DataFrame of the tapas model data
+    """
+
+    MAX_NUM_COLS = 32
+    MAX_NUM_ROWS = 64
+    MODEL_MAX_LENGTH = 512
+
+    counter = 0
+    stats = defaultdict(int)
+    table_counter = 1
+    data_rows = []
+
+    if is_predict:
+        column_names = ["id", "claim_id", "claim", "table_file", "table_id"]
+    else:
+        column_names = [
+            "id",
+            "claim_id",
+            "annotator",
+            "claim",
+            "table_file",
+            "answer_coordinates",
+            "answer_text",
+            "float_answer",
+        ]
+
+    for i, data in enumerate(tqdm(tapas_table_dicts)):
+
+        # Skip data points that doesn't have any tables and contains no evidence
+        if not data["has_tables"]:
+            stats["has_no_tables"] += 1
+            continue
+
+        # TODO: Figure out why some samples don't have any evidence
+        # It's probably because they have "table_caption" evidence and not "table_cell"
+        if len(data["evidence"]) == 0:
+            stats["has_no_evidence"] += 1
+            # In the prediction phase it is possible to have samples without evidence
+            if not is_predict:
+                continue
+
+        coords_answer_map = defaultdict(dict)
+
+        for j, e in enumerate(data["evidence"]):
+            if not "_cell_" in e:
+                continue
+            e_split = e.split("_")
+            table_id = "_".join([e_split[0], e_split[-3]])
+            coords = (int(e_split[-2]), int(e_split[-1]))
+            coords_answer_map[table_id][coords] = remove_header_tokens(
+                data["answer_texts"][j]
+            ).strip()
+
+        table_file_names = {}
+        has_too_large_tables = False
+        evidence_id_out_of_range = False
+        for d in data["table_dicts"]:
+            if (
+                len(d["header"]) > MAX_NUM_COLS
+                or len(d["rows"]) + len(d["header"]) > MAX_NUM_ROWS
+                or len(d["header"]) * (len(d["rows"]) + 1) > MODEL_MAX_LENGTH
+            ):
+                has_too_large_tables = True
+                break
+
+            page_name = d["page"]
+            table_idx = d["cell_ids"][0].split("_")[-3]
+            table_id = "_".join([page_name, table_idx])
+            headers = []
+            rows = []
+            rows.append(d["header"])
+            for h in range(len(d["header"])):
+                headers.append("col{}".format(h))
+            for row in d["rows"]:
+                rows.append(row)
+
+            # Since the table cell numbers are not exactly the same as their
+            # col and row number, some evidence ids may go "out of" the table
+            # Therefore we need to check this in order to not get errors when
+            # training the model.
+            # TODO: Solve the ID problem so this part will not be needed
+            evidence_id_out_of_range = False
+            for e in data["evidence"]:
+                e_split = e.split("_")
+                if e_split[0] == page_name and e_split[-3] == table_idx:
+                    row_idx = e_split[-2]
+                    col_idx = e_split[-1]
+                    if int(row_idx) >= len(rows) or int(col_idx) >= len(d["header"]):
+                        evidence_id_out_of_range = True
+                        break
+
+            if evidence_id_out_of_range:
+                break
+
+            df = pd.DataFrame(rows, columns=headers)
+
+            table_file_name = table_out_path + "table_{}.csv".format(table_counter)
+            table_file_names[table_id] = table_file_name
+
+            if write_to_files:
+                df.to_csv(table_file_name)
+
+            table_counter += 1
+
+        if evidence_id_out_of_range:
+            stats["evidence_id_out_of_range"] += 1
+            continue
+
+        if has_too_large_tables:
+            stats["too_large_tables"] += 1
+            continue
+
+        if is_predict:
+            # ["id", "claim_id", "claim", "table_file", "table_id"]
+            for table_id in table_file_names:
+                data_row = [
+                    i,
+                    data["id"],
+                    data["claim"],
+                    table_file_names[table_id],
+                    table_id,
+                ]
+                data_rows.append(data_row)
+                counter += 1
+        else:
+            # TODO: How to handle the case with multiple tables?
+            # For now, use the table that has the most table cells from the evidence
+            table_index = max(
+                coords_answer_map, key=lambda x: len(coords_answer_map[x].keys())
+            )
+            answer_coords = list(coords_answer_map[table_index].keys())
+
+            assert table_index is not None and answer_coords is not None
+
+            answer_texts = [
+                coords_answer_map[table_index][coords] for coords in answer_coords
+            ]
+            data_row = [
+                i,
+                data["id"],
+                None,
+                data["claim"],
+                table_file_names[table_index],
+                answer_coords,
+                answer_texts,
+                np.nan,
+            ]
+            data_rows.append(data_row)
+            counter += 1
+
+    logger.info(
+        "{} valid train samples out of {}".format(
+            len(data_rows), len(tapas_table_dicts)
+        )
+    )
+    logger.info("{} samples have no tables".format(stats["has_no_tables"]))
+    logger.info("{} samples have no evidence".format(stats["has_no_evidence"]))
+    logger.info("{} samples have too large tables".format(stats["too_large_tables"]))
+    logger.info(
+        "{} samples have indicies outside of the table dimensions".format(
+            stats["evidence_id_out_of_range"]
+        )
+    )
+
+    df = pd.DataFrame(data_rows, columns=column_names)
+    return df
 
 
 def extract_sents(doc_json: dict):

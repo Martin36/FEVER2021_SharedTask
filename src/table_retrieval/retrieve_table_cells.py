@@ -6,7 +6,7 @@ import pandas as pd
 
 from tqdm import tqdm
 from transformers import TapasTokenizer
-from create_tapas_tables import create_tables
+from data_processing.create_tapas_tables import create_tables
 from collections import defaultdict
 
 from util.util_funcs import load_jsonl, get_tables_from_docs, store_jsonl
@@ -166,8 +166,8 @@ def main():
 
     db = FeverousDB(args.db_path)
 
-    model = torch.load(args.model_file)
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+    model = torch.load(args.model_file, map_location=device)
     tokenizer = TapasTokenizer.from_pretrained(args.tapas_model_name)
     model.eval()
 
