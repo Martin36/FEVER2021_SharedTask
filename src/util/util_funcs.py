@@ -16,6 +16,7 @@ sys.path.insert(0, FEVEROUS_PATH)
 
 from database.feverous_db import FeverousDB
 from utils.wiki_page import WikiPage
+from utils.wiki_table import WikiTable
 
 nltk.download("stopwords")
 porter_stemmer = PorterStemmer()
@@ -25,6 +26,9 @@ logger = get_logger()
 
 LABEL_TO_IDX = {"SUPPORTS": 0, "REFUTES": 1, "NOT ENOUGH INFO": 2}
 IDX_TO_LABEL = {0: "SUPPORTS", 1: "REFUTES", 2: "NOT ENOUGH INFO"}
+MAX_NUM_COLS = 32
+MAX_NUM_ROWS = 64
+MAX_TABLE_SIZE = 512
 
 
 def calc_f1(precision: float, recall: float):
@@ -113,7 +117,15 @@ def create_doc_id_map(corpus_path: str):
     return doc_id_map
 
 
-def create_table_dict(table):
+def create_table_dict(table: WikiTable):
+    """Creates a dict from a WikiTable object
+
+    Args:
+        table (WikiTable): The table on WikiTable format
+
+    Returns:
+        dict: Dict of the table
+    """
 
     table_rows = table.get_rows()
     rows = [replace_entities(table_row.cell_content) for table_row in table_rows]
@@ -153,10 +165,6 @@ def create_tapas_tables(
     Returns:
         DataFrame: A DataFrame of the tapas model data
     """
-
-    MAX_NUM_COLS = 32
-    MAX_NUM_ROWS = 64
-    MODEL_MAX_LENGTH = 512
 
     counter = 0
     stats = defaultdict(int)
@@ -211,7 +219,7 @@ def create_tapas_tables(
             if (
                 len(d["header"]) > MAX_NUM_COLS
                 or len(d["rows"]) + len(d["header"]) > MAX_NUM_ROWS
-                or len(d["header"]) * (len(d["rows"]) + 1) > MODEL_MAX_LENGTH
+                or len(d["header"]) * (len(d["rows"]) + 1) > MAX_TABLE_SIZE
             ):
                 has_too_large_tables = True
                 break
@@ -354,9 +362,14 @@ def get_evidence_docs(doc_json: dict):
 
 
 def get_tables_from_docs(db: FeverousDB, doc_names: List[str]):
-    """
-        Takes a list of document names and returns a dict with
-        a list of tables for each document
+    """Takes a list of document names and returns a dict with a list of tables for each document
+
+    Args:
+        db (FeverousDB): The FEVEROUS DB object
+        doc_names (List[str]): A list of the document ids
+
+    Returns:
+        dict: A dict with a mapping from document id to a list of table dicts
     """
 
     result = {}

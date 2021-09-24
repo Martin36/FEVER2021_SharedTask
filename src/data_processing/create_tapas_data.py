@@ -1,4 +1,4 @@
-import sys, os, unicodedata, argparse, jsonlines
+import sys, os, unicodedata, argparse
 
 from tqdm import tqdm
 
